@@ -6,9 +6,12 @@ import pytest
 from PIL import Image
 
 from src.backend.attachments import (
+    MAX_IMAGE_DIMENSION,
+    MAX_TEXT_CHARACTERS,
     MAX_TOTAL_BYTES,
     AttachmentError,
     AttachmentTooLargeError,
+    content_blocks_for_analysis,
     validate_attachments,
 )
 from src.backend.schemas import Attachment
@@ -40,6 +43,27 @@ def test_validates_text_image_and_pdf_without_creating_model_content():
             attachment("report.pdf", "application/pdf", make_pdf(1)),
         ]
     ) is None
+
+
+def test_analysis_text_is_truncated_with_notice():
+    blocks = content_blocks_for_analysis(
+        attachment("large.txt", "text/plain", b"a" * (MAX_TEXT_CHARACTERS + 100))
+    )
+
+    assert blocks[0]["text"].endswith("[File text truncated at 200,000 characters.]")
+    assert len(blocks[0]["text"]) == MAX_TEXT_CHARACTERS
+
+
+def test_analysis_image_is_converted_to_bounded_jpeg():
+    image = Image.new("RGBA", (2000, 1000), (255, 0, 0, 128))
+    image_data = BytesIO()
+    image.save(image_data, format="PNG")
+
+    block = content_blocks_for_analysis(attachment("wide.png", "image/png", image_data.getvalue()))[0]
+    with Image.open(BytesIO(base64.b64decode(block["base64"]))) as rendered:
+        assert rendered.format == "JPEG"
+        assert rendered.mode == "RGB"
+        assert max(rendered.size) == MAX_IMAGE_DIMENSION
 
 
 @pytest.mark.parametrize(

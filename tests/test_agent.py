@@ -1,9 +1,15 @@
 import src.backend.agent as agent_module
+import base64
+from io import BytesIO
+
+import pymupdf
+import pytest
 from langchain.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
+from PIL import Image
 
-from src.backend.agent import ConfigurationError, _merge_attachments, build_agent, send_file
+from src.backend.agent import ConfigurationError, _merge_attachments, build_agent, build_file_analysis_tool, send_file
 from src.backend.config import Settings
 
 
@@ -13,6 +19,23 @@ def invoke_send_file(state):
     graph.add_edge(START, "tools")
     graph.add_edge("tools", END)
     return graph.compile().invoke(state)
+
+
+async def invoke_file_analysis(tool, state):
+    graph = StateGraph(dict)
+    graph.add_node("tools", ToolNode([tool]))
+    graph.add_edge(START, "tools")
+    graph.add_edge("tools", END)
+    return await graph.compile().ainvoke(state)
+
+
+class FileAnalysisModel:
+    def __init__(self):
+        self.messages = None
+
+    async def ainvoke(self, messages):
+        self.messages = messages
+        return AIMessage(content="File analysis response")
 
 
 def test_build_agent_passes_reasoning_effort_to_responses_api(monkeypatch):
@@ -41,8 +64,9 @@ def test_build_agent_passes_reasoning_effort_to_responses_api(monkeypatch):
         "use_responses_api": True,
         "reasoning": {"effort": "medium"},
     }
-    assert captured["agent"]["tools"] == [agent_module.calculation, send_file]
+    assert [tool.name for tool in captured["agent"]["tools"]] == ["calculation", "send_file", "analyze_file"]
     assert captured["agent"]["state_schema"] is agent_module.ChatAgentState
+    assert "analyze_file" in captured["agent"]["system_prompt"]
 
 
 def test_build_agent_requires_reasoning_effort():
@@ -92,3 +116,98 @@ def test_send_file_reports_a_missing_file():
 
     assert result["messages"][0].content == "No stored file named 'missing.txt' is available."
     assert result["messages"][0].artifact == {"attachments": []}
+
+
+@pytest.mark.anyio
+async def test_analyze_file_exposes_only_instruction_and_filename_and_sends_text_to_subagent():
+    model = FileAnalysisModel()
+    tool = build_file_analysis_tool(model)
+    tool_call = {
+        "name": "analyze_file",
+        "args": {"instruction": "List the key fact.", "filename": "notes.txt"},
+        "id": "call-1",
+        "type": "tool_call",
+    }
+
+    result = await invoke_file_analysis(
+        tool,
+        {
+            "messages": [AIMessage(content="", tool_calls=[tool_call])],
+            "attachments": {
+                "notes.txt": {
+                    "name": "notes.txt",
+                    "mime_type": "text/plain",
+                    "content_base64": base64.b64encode(b"The key fact is 42.").decode("ascii"),
+                }
+            },
+        },
+    )
+
+    assert set(tool.tool_call_schema.model_json_schema()["properties"]) == {"instruction", "filename"}
+    assert result["messages"][0].content == "File analysis response"
+    assert model.messages[1].content == [
+        {
+            "type": "text",
+            "text": "Instruction:\nList the key fact.\n\nFilename: notes.txt\n\nFile content follows.",
+        },
+        {"type": "text", "text": "The key fact is 42."},
+    ]
+
+
+@pytest.mark.anyio
+async def test_analyze_file_downscales_image_and_rendered_pdf_pages():
+    image = Image.new("RGBA", (2000, 1000), (255, 0, 0, 128))
+    image_bytes = BytesIO()
+    image.save(image_bytes, format="PNG")
+    document = pymupdf.open()
+    document.new_page(width=1000, height=1600)
+    pdf_bytes = document.tobytes()
+    document.close()
+    model = FileAnalysisModel()
+    tool = build_file_analysis_tool(model)
+
+    for filename, mime_type, content in [
+        ("wide.png", "image/png", image_bytes.getvalue()),
+        ("pages.pdf", "application/pdf", pdf_bytes),
+    ]:
+        tool_call = {
+            "name": "analyze_file",
+            "args": {"instruction": "Describe it.", "filename": filename},
+            "id": f"call-{filename}",
+            "type": "tool_call",
+        }
+        await invoke_file_analysis(
+            tool,
+            {
+                "messages": [AIMessage(content="", tool_calls=[tool_call])],
+                "attachments": {
+                    filename: {
+                        "name": filename,
+                        "mime_type": mime_type,
+                        "content_base64": base64.b64encode(content).decode("ascii"),
+                    }
+                },
+            },
+        )
+        image_block = model.messages[1].content[1]
+        with Image.open(BytesIO(base64.b64decode(image_block["base64"]))) as rendered:
+            assert rendered.format == "JPEG"
+            assert rendered.mode == "RGB"
+            assert max(rendered.size) == 1400
+
+
+@pytest.mark.anyio
+async def test_analyze_file_reports_a_missing_file_without_calling_subagent():
+    model = FileAnalysisModel()
+    tool = build_file_analysis_tool(model)
+    tool_call = {
+        "name": "analyze_file",
+        "args": {"instruction": "Summarize it.", "filename": "missing.txt"},
+        "id": "call-1",
+        "type": "tool_call",
+    }
+
+    result = await invoke_file_analysis(tool, {"messages": [AIMessage(content="", tool_calls=[tool_call])]})
+
+    assert result["messages"][0].content == "No stored file named 'missing.txt' is available."
+    assert model.messages is None

@@ -18,8 +18,10 @@ conda activate hackathon
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY` and `OPENAI_MODEL` in `.env`. The model must support image
-input and function calling. `BACKEND_URL` and `FRONTEND_PORT` are optional.
+Set `OPENAI_API_KEY`, `OPENAI_MODEL`, and `REASONING_EFFORT` in `.env`. The
+model must support image input and function calling. Use a reasoning effort the
+selected model supports, such as `medium`. `BACKEND_URL` and `FRONTEND_PORT`
+are optional.
 
 ## Run
 

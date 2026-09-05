@@ -36,11 +36,14 @@ def build_agent(settings: Settings) -> Any:
         raise ConfigurationError("OPENAI_API_KEY is not configured.")
     if not settings.openai_model:
         raise ConfigurationError("OPENAI_MODEL is not configured.")
+    if not settings.reasoning_effort:
+        raise ConfigurationError("REASONING_EFFORT is not configured.")
 
     model = ChatOpenAI(
         api_key=settings.openai_api_key,
         model=settings.openai_model,
         use_responses_api=True,
+        reasoning={"effort": settings.reasoning_effort},
     )
     return create_agent(
         model=model,

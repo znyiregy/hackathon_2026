@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     openai_api_key: str | None = None
     openai_model: str | None = None
+    reasoning_effort: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

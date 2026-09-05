@@ -5,7 +5,8 @@ import pytest
 
 from src.backend.api import app, get_chat_service
 from src.backend.attachments import AttachmentError, AttachmentTooLargeError
-from src.backend.service import AgentInvocationError
+from src.backend.schemas import ChatMessage, DownloadAttachment
+from src.backend.service import AgentInvocationError, ChatResult
 
 
 class FakeService:
@@ -18,7 +19,7 @@ class FakeService:
         self.requests.append(request)
         if self.error:
             raise self.error
-        return self.result
+        return ChatResult(answer=self.result, messages=[ChatMessage(role="assistant", content=self.result)])
 
 
 def override_with(service):
@@ -54,8 +55,47 @@ async def test_chat_contract_and_attachment_only_message():
     finally:
         app.dependency_overrides.clear()
     assert response.status_code == 200
-    assert response.json() == {"thread_id": thread_id, "answer": "fake answer"}
+    assert response.json() == {
+        "thread_id": thread_id,
+        "answer": "fake answer",
+        "messages": [{"role": "assistant", "content": "fake answer", "tool_name": None, "attachments": []}],
+    }
     assert fake.requests[0].files[0].name == "a.txt"
+
+
+@pytest.mark.anyio
+async def test_chat_returns_tool_messages_and_download_attachments():
+    fake = FakeService()
+    fake.result = "The report is ready."
+    async def chat_with_tool_output(request):
+        fake.requests.append(request)
+        return ChatResult(
+            answer=fake.result,
+            messages=[
+                ChatMessage(
+                    role="tool",
+                    tool_name="build_report",
+                    content="Generated report.",
+                    attachments=[DownloadAttachment(name="report.txt", mime_type="text/plain", content_base64="SGVsbG8=")],
+                ),
+                ChatMessage(role="assistant", content=fake.result),
+            ],
+        )
+
+    fake.chat = chat_with_tool_output
+    app.dependency_overrides[get_chat_service] = override_with(fake)
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/chat", json={"thread_id": str(uuid4()), "message": "make a report"})
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json()["messages"][0] == {
+        "role": "tool",
+        "tool_name": "build_report",
+        "content": "Generated report.",
+        "attachments": [{"name": "report.txt", "mime_type": "text/plain", "content_base64": "SGVsbG8="}],
+    }
 
 
 @pytest.mark.anyio

@@ -68,6 +68,30 @@ Images and rendered PDF pages are converted to JPEG quality 92 with a maximum
 long side of 1400 pixels. Combined text attachment content is truncated at
 200,000 characters with a visible notice.
 
+Responses include the final `answer` and ordered `messages`. Tool messages are
+forwarded to the frontend, so their status text is shown in the transcript. A
+tool can also return a downloadable file in its LangChain `ToolMessage`
+artifact:
+
+```python
+(
+    "Report created.",
+    {
+        "attachments": [
+            {
+                "name": "report.txt",
+                "mime_type": "text/plain",
+                "content_base64": "SGVsbG8=",
+            }
+        ]
+    },
+)
+```
+
+Use this tuple with a LangChain tool configured with
+`response_format="content_and_artifact"`. The frontend renders each attachment
+as a download link.
+
 ## Tests
 
 The automated tests do not call OpenAI and do not need an API key:

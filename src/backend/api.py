@@ -39,7 +39,7 @@ async def chat(
     service: ChatService = Depends(get_chat_service),
 ) -> ChatResponse:
     try:
-        answer = await service.chat(request)
+        result = await service.chat(request)
     except AttachmentTooLargeError as exc:
         raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=str(exc)) from exc
     except AttachmentError as exc:
@@ -53,4 +53,4 @@ async def chat(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="The language model could not complete the request.",
         ) from exc
-    return ChatResponse(thread_id=request.thread_id, answer=answer)
+    return ChatResponse(thread_id=request.thread_id, answer=result.answer, messages=result.messages)

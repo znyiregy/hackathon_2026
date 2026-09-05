@@ -41,6 +41,8 @@ button, textarea { font: inherit; }
 .message-role { margin-bottom: 5px; font-size: .78rem; font-weight: 700; color: #536078; }
 .message-content { white-space: pre-wrap; line-height: 1.45; }
 .message-files { margin-top: 7px; font-size: .78rem; color: #596780; }
+.message-downloads { margin-top: 8px; }
+.download-link { color: #175cd3; font-size: .88rem; }
 
 .composer { padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .upload-box {

@@ -24,6 +24,12 @@ class UploadedFile:
         }
 
 
+@dataclass(frozen=True)
+class ChatReply:
+    answer: str
+    messages: list[dict[str, Any]]
+
+
 def parse_uploads(contents: list[str] | str | None, filenames: list[str] | str | None) -> list[UploadedFile]:
     if contents is None or filenames is None:
         return []
@@ -51,7 +57,7 @@ def send_chat(
     message: str,
     files: list[UploadedFile],
     timeout: float = 120,
-) -> str:
+) -> ChatReply:
     payload: dict[str, Any] = {
         "thread_id": thread_id,
         "message": message,
@@ -69,9 +75,13 @@ def send_chat(
             detail = response.text
         raise BackendError(f"Backend returned {response.status_code}: {detail}")
     try:
-        answer = response.json()["answer"]
+        payload = response.json()
+        answer = payload["answer"]
+        messages = payload["messages"]
     except (KeyError, TypeError, ValueError) as exc:
         raise BackendError("The backend returned an invalid response.") from exc
-    if not isinstance(answer, str):
+    if not isinstance(answer, str) or not isinstance(messages, list):
         raise BackendError("The backend returned an invalid response.")
-    return answer
+    if not all(isinstance(message, dict) for message in messages):
+        raise BackendError("The backend returned an invalid response.")
+    return ChatReply(answer=answer, messages=messages)

@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from src.frontend.client import BackendError, UploadedFile, parse_uploads, send_chat
+from src.frontend.client import BackendError, ChatReply, UploadedFile, parse_uploads, send_chat
 
 
 class FakeResponse:
@@ -42,11 +42,11 @@ def test_send_chat_constructs_expected_request(monkeypatch):
 
     def fake_post(url, json, timeout):
         captured.update(url=url, json=json, timeout=timeout)
-        return FakeResponse(payload={"answer": "hello"})
+        return FakeResponse(payload={"answer": "hello", "messages": [{"role": "assistant", "content": "hello"}]})
 
     monkeypatch.setattr(requests, "post", fake_post)
     answer = send_chat("http://backend/", "thread", "hi", [UploadedFile("a.txt", "text/plain", "YQ==")])
-    assert answer == "hello"
+    assert answer == ChatReply(answer="hello", messages=[{"role": "assistant", "content": "hello"}])
     assert captured == {
         "url": "http://backend/chat",
         "json": {

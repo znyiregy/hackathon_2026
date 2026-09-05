@@ -66,13 +66,33 @@ def render_transcript(transcript: list[dict[str, object]]):
     for item in transcript:
         role = str(item.get("role", "assistant"))
         files = item.get("files", [])
+        attachments = item.get("attachments", [])
+        downloads = []
+        if isinstance(attachments, list):
+            for attachment in attachments:
+                if not isinstance(attachment, dict):
+                    continue
+                name = attachment.get("name")
+                mime_type = attachment.get("mime_type")
+                content_base64 = attachment.get("content_base64")
+                if all(isinstance(value, str) and value for value in (name, mime_type, content_base64)):
+                    downloads.append(
+                        html.A(
+                            f"Download {name}",
+                            href=f"data:{mime_type};base64,{content_base64}",
+                            download=name,
+                            className="download-link",
+                        )
+                    )
+        label = "You" if role == "user" else (f"Tool: {item['tool_name']}" if item.get("tool_name") else "Assistant")
         rendered.append(
             html.Div(
                 className=f"message message-{role}",
                 children=[
-                    html.Div("You" if role == "user" else "Assistant", className="message-role"),
+                    html.Div(label, className="message-role"),
                     html.Div(str(item.get("content", "")), className="message-content"),
                     html.Div(", ".join(files), className="message-files") if files else None,
+                    html.Div(downloads, className="message-downloads") if downloads else None,
                 ],
             )
         )
@@ -116,14 +136,14 @@ def handle_action(
         files = parse_uploads(contents, filenames)
         if not message.strip() and not files:
             return no_update, no_update, "Enter a message or attach at least one file.", no_update, no_update, no_update
-        answer = send_chat(BACKEND_URL, thread_id, message, files)
+        reply = send_chat(BACKEND_URL, thread_id, message, files)
     except BackendError as exc:
         return no_update, no_update, str(exc), no_update, no_update, no_update
 
     user_text = message.strip() or "Please analyze the attached file or files."
     updated = list(transcript or [])
     updated.append({"role": "user", "content": user_text, "files": [file.name for file in files]})
-    updated.append({"role": "assistant", "content": answer})
+    updated.extend(reply.messages)
     return updated, thread_id, "", "", None, None
 
 

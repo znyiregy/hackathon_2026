@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 import pytest
-from langchain.messages import AIMessage
+from langchain.messages import AIMessage, ToolMessage
 
 from src.backend.schemas import ChatRequest
 from src.backend.service import ChatService
@@ -24,9 +24,9 @@ async def test_service_passes_thread_id_and_threads_are_isolated():
     first_thread = uuid4()
     second_thread = uuid4()
 
-    assert await service.chat(ChatRequest(thread_id=first_thread, message="one")) == "message 1"
-    assert await service.chat(ChatRequest(thread_id=first_thread, message="two")) == "message 2"
-    assert await service.chat(ChatRequest(thread_id=second_thread, message="one")) == "message 1"
+    assert (await service.chat(ChatRequest(thread_id=first_thread, message="one"))).answer == "message 1"
+    assert (await service.chat(ChatRequest(thread_id=first_thread, message="two"))).answer == "message 2"
+    assert (await service.chat(ChatRequest(thread_id=second_thread, message="one"))).answer == "message 1"
 
 
 @pytest.mark.anyio
@@ -37,4 +37,46 @@ async def test_attachment_only_message_gets_a_default_instruction():
         thread_id=uuid4(),
         files=[{"name": "a.txt", "mime_type": "text/plain", "content_base64": "aGVsbG8="}],
     )
-    assert await service.chat(request) == "message 1"
+    assert (await service.chat(request)).answer == "message 1"
+
+
+class ToolMessageAgent:
+    async def ainvoke(self, payload, config):
+        return {
+            "messages": [
+                *payload["messages"],
+                ToolMessage(
+                    content="The file is ready.",
+                    name="build_report",
+                    tool_call_id="call-1",
+                    artifact={
+                        "attachments": [
+                            {
+                                "name": "report.txt",
+                                "mime_type": "text/plain",
+                                "content_base64": "SGVsbG8=",
+                            }
+                        ]
+                    },
+                ),
+                AIMessage(content="I created the report."),
+            ]
+        }
+
+
+@pytest.mark.anyio
+async def test_service_forwards_tool_messages_and_downloadable_attachments():
+    result = await ChatService(ToolMessageAgent()).chat(ChatRequest(thread_id=uuid4(), message="make a report"))
+
+    assert result.answer == "I created the report."
+    assert [message.model_dump() for message in result.messages] == [
+        {
+            "role": "tool",
+            "content": "The file is ready.",
+            "tool_name": "build_report",
+            "attachments": [
+                {"name": "report.txt", "mime_type": "text/plain", "content_base64": "SGVsbG8="}
+            ],
+        },
+        {"role": "assistant", "content": "I created the report.", "tool_name": None, "attachments": []},
+    ]

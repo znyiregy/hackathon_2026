@@ -1,0 +1,147 @@
+.huelle {
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  background: var(--flaeche-still);
+  overflow: hidden;
+}
+
+.knopf {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  color: var(--tinte-weich);
+  font-size: 0.8rem;
+}
+
+.knopf:hover {
+  color: var(--tinte);
+  background: var(--grau-flaeche);
+}
+
+.pfeil {
+  font-size: 0.7rem;
+  flex: none;
+}
+
+.datei {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.koerper {
+  border-top: 1px solid var(--rand);
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.zitat {
+  margin: 0;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--bernstein);
+  font-size: 0.82rem;
+  color: var(--tinte-weich);
+  overflow-wrap: anywhere;
+}
+
+/* Die Seite selbst. Sie darf groß sein — sie zu lesen ist der ganze Zweck. */
+.blatt {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rand-stark);
+  border-radius: 5px;
+  background: #fff;
+  cursor: zoom-in;
+}
+
+/* In der schmalen Akte-Spalte ist eine Bauzeichnung nicht lesbar. Ein Klick
+   zieht das Blatt über die ganze Fläche — Dokumente ansehen ist der einzige
+   Vorgang, für den das hier gerechtfertigt ist. */
+.lupe {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(23, 22, 15, 0.82);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.7rem;
+}
+
+.lupeKopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  color: #fff;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+
+.lupeName {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.lupeSchliessen {
+  background: #fff;
+  color: var(--tinte);
+  border: none;
+  border-radius: 7px;
+  padding: 0.45rem 0.9rem;
+  min-height: 44px;
+  flex: none;
+}
+
+.lupeRahmen {
+  overflow: auto;
+  border-radius: 6px;
+  background: #fff;
+  display: grid;
+  place-items: start center;
+}
+
+.lupeBild {
+  display: block;
+  width: auto;
+  max-width: none;
+  /* Größer als die Fläche, damit Details lesbar bleiben und gescrollt wird. */
+  min-width: 100%;
+  height: auto;
+  cursor: zoom-out;
+}
+
+.fusszeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.73rem;
+  color: var(--tinte-leise);
+}
+
+.laedt {
+  padding: 1.4rem 0.6rem;
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--tinte-leise);
+}
+
+/* Zwei Quellen nebeneinander — genau das macht einen Widerspruch prüfbar. */
+.gegenueber {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.6rem;
+}
+
+@media (max-width: 700px) {
+  .gegenueber {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

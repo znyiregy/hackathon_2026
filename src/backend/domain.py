@@ -96,12 +96,17 @@ class Fakt(BaseModel):
 
 
 class KonfliktWert(BaseModel):
-    """One competing value for a fact, with the document that asserts it."""
+    """One competing value for a fact, with the document that asserts it.
+
+    ``zitat`` travels with the value so the interface can open the page and
+    mark the sentence the value was read from.
+    """
 
     wert: str
     dokument_id: str
     dateiname: str
     seite: int | None = None
+    zitat: str = ""
 
 
 class Konflikt(BaseModel):

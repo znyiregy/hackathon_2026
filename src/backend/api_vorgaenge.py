@@ -23,6 +23,7 @@ from src.backend.api_schemas import (
     KonflikteAntwort,
     KonfliktLoesen,
     PaketAntwort,
+    SeitenvorschauAntwort,
     UploadLinkAnlegen,
     UploadLinkAntwort,
     UploadSeite,
@@ -36,6 +37,7 @@ from src.backend.config import get_settings
 from src.backend.domain import Fakt
 from src.backend.katalog import KATEGORIEN
 from src.backend.regeln import freigabe_moeglich
+from src.backend.vorschau import VorschauError, seite_rendern
 from src.backend.store import (
     Store,
     UploadLinkInvalidError,
@@ -239,6 +241,48 @@ async def dokument_aktualisieren(
     except KeyError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return DokumenteAntwort(dokumente=list(store.akte(vorgang_id).dokumente.values()))
+
+
+@router.get(
+    "/vorgaenge/{vorgang_id}/dokumente/{dokument_id}/seite/{seite_nr}",
+    response_model=SeitenvorschauAntwort,
+)
+async def seitenvorschau(
+    vorgang_id: str,
+    dokument_id: str,
+    seite_nr: int,
+    zitat: str = "",
+    store: Store = Depends(get_store_dep),
+) -> SeitenvorschauAntwort:
+    """Render the page a fact came from, with its quote highlighted.
+
+    Every claim in the interface is one click from the page it stands on.
+    """
+
+    akte = _akte_oder_404(store, vorgang_id)
+    dokument = akte.dokumente.get(dokument_id)
+    datei = akte.dateien.get(dokument_id)
+    if dokument is None or datei is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diese Unterlage gehört nicht zu diesem Vorgang.",
+        )
+
+    try:
+        bild = seite_rendern(datei, seite_nr, zitat)
+    except VorschauError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+
+    return SeitenvorschauAntwort(
+        bild_base64=bild.bild_base64,
+        mime_type=bild.mime_type,
+        seite=bild.seite,
+        seiten_gesamt=bild.seiten_gesamt,
+        markiert=bild.markiert,
+        dateiname=dokument.dateiname,
+    )
 
 
 # -- Fakten, Konflikte, Anforderungen -------------------------------------

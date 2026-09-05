@@ -32,6 +32,10 @@ export function neuerZustand(): Zustand {
 
 const VORGANG_ID = "testvorgang01";
 
+/** Ein winziges echtes JPEG, damit der Browser wirklich ein Bild lädt. */
+const SEITENBILD =
+  "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s7+9+H/BD2/kYlFbdFH9nf3vw/4Ie38jEorboo/s7+9+H/BD2/kZ2n/69v8Ad/qK0aKK7qFL2UOW9zKcuZ3CiiityAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q==";
+
 function dokument(name: string, typ: string, unklar = false) {
   return {
     id: `dok-${name}`,
@@ -267,6 +271,17 @@ export async function backendStellen(page: Page): Promise<Zustand> {
 
     if (pfad.endsWith("/dokumente") && methode === "GET") {
       return json(route, { dokumente: zustand.dokumente, abgelehnt: [] });
+    }
+
+    if (pfad.includes("/seite/")) {
+      return json(route, {
+        bild_base64: SEITENBILD,
+        mime_type: "image/jpeg",
+        seite: 1,
+        seiten_gesamt: 1,
+        markiert: true,
+        dateiname: "flurkarte.pdf",
+      });
     }
 
     if (pfad.endsWith("/fakten")) return json(route, fakten(zustand));

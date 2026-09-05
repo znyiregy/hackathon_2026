@@ -120,7 +120,7 @@ test.describe("Kritischer Pfad", () => {
     await expect(page.getByText(/überschreitet die Schwelle von 90 Tagen/)).toBeVisible();
   });
 
-  test("Projektdaten bestätigen und Beleg einsehen", async ({ page }) => {
+  test("Projektdaten bestätigen", async ({ page }) => {
     await backendStellen(page);
     await page.goto(`/vorgang/${VORGANG_ID}`);
 
@@ -128,9 +128,11 @@ test.describe("Kritischer Pfad", () => {
     await expect(page.getByText("Flurstück").first()).toBeVisible();
     await expect(page.getByText("KI-Entwurf").first()).toBeVisible();
 
-    // Der Beleg ist ohne Maus erreichbar — nicht in einem Tooltip versteckt.
-    await page.getByText("Beleg anzeigen").first().click();
-    await expect(page.getByText("Flurstück: 1477")).toBeVisible();
+    // Die Quelle steht neben jedem Wert; die Seite selbst prüft der eigene
+    // Test unter "Quellvorschau".
+    await expect(
+      page.getByRole("button", { name: /Quelle öffnen/ }).first(),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Bestätigen" }).first().click();
     // Der Status-Chip wechselt von "KI-Entwurf" auf "bestätigt".
@@ -277,5 +279,71 @@ test.describe("Mobil", () => {
       expect(kasten!.height, `${name} ist zu klein zum Antippen`).toBeGreaterThanOrEqual(44);
       await reiter.click();
     }
+  });
+});
+
+test.describe("Quellvorschau", () => {
+  test("jede Behauptung ist einen Klick von ihrer Seite entfernt", async ({
+    page,
+  }) => {
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+    await reiterOeffnen(page, "Projektdaten");
+
+    // Die Quelle steht als Name da, das Blatt kommt erst auf Wunsch —
+    // eine PDF-Seite zu rendern ist nicht umsonst.
+    const oeffnen = page.getByRole("button", { name: /Quelle öffnen/ }).first();
+    await expect(oeffnen).toBeVisible();
+    expect(await page.getByRole("tabpanel").locator("img").count()).toBe(0);
+
+    await oeffnen.click();
+
+    // Das Zitat und die Seite selbst erscheinen.
+    await expect(page.getByText("Flurstück: 1477").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    const blatt = page.getByRole("tabpanel").locator("img").first();
+    await expect(blatt).toBeVisible();
+    await expect(page.getByText(/Fundstelle markiert/).first()).toBeVisible();
+
+    // Und lässt sich zum Lesen aufziehen — in der schmalen Spalte wäre eine
+    // Bauzeichnung sonst nicht zu entziffern.
+    await blatt.click();
+    const lupe = page.getByRole("dialog");
+    await expect(lupe).toBeVisible();
+    await expect(lupe.getByText(/flurkarte\.pdf/)).toBeVisible();
+
+    // Escape muss schließen, sonst sitzt man mit der Tastatur fest.
+    await page.keyboard.press("Escape");
+    await expect(lupe).toHaveCount(0);
+  });
+
+  test("beim Widerspruch stehen beide Quellen nebeneinander", async ({ page }) => {
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+
+    // Erst hochladen, damit der Widerspruch entsteht.
+    await page.setInputFiles('input[type="file"][multiple]', [
+      {
+        name: "flurkarte.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("%PDF-1.4 test"),
+      },
+    ]);
+    await expect(page.getByText(/flurkarte\.pdf →/)).toBeVisible({
+      timeout: 20_000,
+    });
+
+    await reiterOeffnen(page, /Widersprüche/);
+    const akte = page.getByRole("tabpanel");
+
+    // Zwei Quellen, jede einzeln aufklappbar — das macht die Entscheidung
+    // überhaupt erst treffbar.
+    const quellen = akte.getByRole("button", { name: /Quelle öffnen/ });
+    await expect(quellen).toHaveCount(2);
+    await expect(quellen.filter({ hasText: "bauschein.pdf" })).toHaveCount(1);
+    await expect(
+      quellen.filter({ hasText: "nutzungsaufstellung.pdf" }),
+    ).toHaveCount(1);
   });
 });

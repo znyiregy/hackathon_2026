@@ -262,6 +262,7 @@ class VorgangService:
                         dokument_id=herkunft.dokument_id,
                         dateiname=herkunft.dateiname,
                         seite=herkunft.seite,
+                        zitat=herkunft.zitat,
                     )
                 )
 

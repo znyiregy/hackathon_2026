@@ -116,6 +116,7 @@ export interface KonfliktWert {
   dokument_id: string;
   dateiname: string;
   seite: number | null;
+  zitat: string;
 }
 
 export interface Konflikt {
@@ -233,6 +234,16 @@ export interface Datei {
   content_base64: string;
 }
 
+export interface Seitenvorschau {
+  bild_base64: string;
+  mime_type: string;
+  seite: number;
+  seiten_gesamt: number;
+  /** False bei Scans ohne Textebene — die Seite kommt, die Markierung nicht. */
+  markiert: boolean;
+  dateiname: string;
+}
+
 export interface AbgelehnteDatei {
   name: string;
   grund: string;
@@ -303,6 +314,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ wert: wert ?? null }),
     }),
+
+  seitenvorschau: (
+    id: string,
+    dokumentId: string,
+    seite: number,
+    zitat: string,
+  ) =>
+    anfrage<Seitenvorschau>(
+      `/api/vorgaenge/${segment(id)}/dokumente/${segment(dokumentId)}/seite/${seite}` +
+        `?zitat=${encodeURIComponent(zitat.slice(0, 300))}`,
+    ),
 
   konflikte: (id: string) =>
     anfrage<{ konflikte: Konflikt[] }>(`/api/vorgaenge/${segment(id)}/konflikte`),

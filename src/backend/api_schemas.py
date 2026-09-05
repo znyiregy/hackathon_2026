@@ -138,6 +138,17 @@ class DokumenteAntwort(BaseModel):
     abgelehnt: list[AbgelehnteDatei] = Field(default_factory=list)
 
 
+class SeitenvorschauAntwort(BaseModel):
+    """One rendered source page — the feature that makes a claim checkable."""
+
+    bild_base64: str
+    mime_type: str
+    seite: int
+    seiten_gesamt: int
+    markiert: bool
+    dateiname: str
+
+
 class FaktenAntwort(BaseModel):
     fakten: list[Fakt]
     kategorien: list[str]

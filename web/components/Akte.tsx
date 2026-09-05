@@ -13,6 +13,7 @@ import {
   type VorgangDetail,
 } from "@/lib/api";
 import { Antragsvorbereitung, Paketansicht } from "./Antrag";
+import { Quellenvergleich, Quellvorschau } from "./Quellvorschau";
 import stil from "./Akte.module.css";
 
 type Reiter =
@@ -608,13 +609,18 @@ function FaktZeile({
           </button>
         )}
       </div>
-      {quelle?.zitat && (
-        // Das Zitat ist der Beleg des Produkts — es darf nicht in einem
-        // Maus-Tooltip verschwinden, den Touch und Tastatur nie erreichen.
-        <details className={stil.beleg}>
-          <summary>Beleg anzeigen</summary>
-          <blockquote>{quelle.zitat}</blockquote>
-        </details>
+      {quelle && (
+        // Der Beleg ist die Seite selbst, nicht nur ihr Name. Ein Klick
+        // genügt — das ist die Funktion, die Vertrauen herstellt.
+        <div className={stil.beleg}>
+          <Quellvorschau
+            vorgangId={vorgangId}
+            dokumentId={quelle.dokument_id}
+            dateiname={quelle.dateiname}
+            seite={quelle.seite}
+            zitat={quelle.zitat}
+          />
+        </div>
       )}
       {fehler && <Fehlerband text={fehler} />}
     </div>
@@ -729,6 +735,21 @@ function KonfliktKarte({
       {konflikt.hinweis && (
         <p className={stil.konfliktHinweis}>{konflikt.hinweis}</p>
       )}
+
+      {/* Beide Quellausschnitte nebeneinander in lesbarer Größe — erst das
+          macht einen Widerspruch entscheidbar statt nur behauptet. */}
+      <Quellenvergleich>
+        {konflikt.werte.map((wert, index) => (
+          <Quellvorschau
+            key={`${wert.dokument_id}-${index}`}
+            vorgangId={vorgangId}
+            dokumentId={wert.dokument_id}
+            dateiname={wert.dateiname}
+            seite={wert.seite}
+            zitat={wert.zitat || wert.wert}
+          />
+        ))}
+      </Quellenvergleich>
 
       <div className={stil.knopfreihe}>
         {konflikt.werte.map((wert, index) => (

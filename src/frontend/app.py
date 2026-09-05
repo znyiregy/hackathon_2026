@@ -40,7 +40,7 @@ app.layout = html.Main(
                 html.Div(id="upload-list", className="upload-list"),
                 dcc.Textarea(
                     id="message-input",
-                    placeholder="Ask a question…",
+                    placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)",
                     className="message-input",
                 ),
                 html.Button("Send", id="send", className="primary-button"),

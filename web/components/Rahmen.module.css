@@ -1,0 +1,138 @@
+.huelle {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.seitenleiste {
+  background: var(--flaeche-still);
+  border-right: 1px solid var(--rand);
+  padding: 1.6rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.marke {
+  position: relative;
+}
+
+.marke a {
+  text-decoration: none;
+}
+
+.markeName {
+  font-family: var(--serif);
+  font-size: 1.28rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--tinte);
+  display: inline-block;
+}
+
+.menue {
+  display: none;
+  position: absolute;
+  top: -0.2rem;
+  right: 0;
+  font-size: 1.1rem;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.navEintrag {
+  display: block;
+  padding: 0.5rem 0.7rem;
+  border-radius: 7px;
+  color: var(--tinte-weich);
+  text-decoration: none;
+}
+
+.navEintrag:hover {
+  background: var(--grau-flaeche);
+  color: var(--tinte);
+}
+
+.aktiv {
+  background: var(--tinte);
+  color: #fff;
+}
+
+.aktiv:hover {
+  background: var(--tinte);
+  color: #fff;
+}
+
+.person {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.personKreis {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--tinte);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  flex: none;
+}
+
+.personName {
+  font-weight: 500;
+}
+
+.inhalt {
+  padding: 2rem 2.2rem 4rem;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .huelle {
+    grid-template-columns: 1fr;
+  }
+
+  .seitenleiste {
+    position: static;
+    height: auto;
+    padding: 1rem 1.1rem;
+    gap: 0.9rem;
+  }
+
+  .menue {
+    display: block;
+  }
+
+  /* Navigation und Person sind auf schmalen Bildschirmen eingeklappt,
+     bis das Menü geöffnet wird. */
+  .navigation,
+  .person {
+    display: none;
+  }
+
+  .offen .navigation {
+    display: flex;
+  }
+
+  .offen .person {
+    display: flex;
+    margin-top: 0.4rem;
+  }
+
+  .inhalt {
+    padding: 1.2rem 1.1rem 3rem;
+  }
+}

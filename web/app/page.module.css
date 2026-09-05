@@ -1,0 +1,118 @@
+.kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+}
+
+.unterzeile {
+  color: var(--tinte-weich);
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+
+.leer {
+  padding: 2.2rem;
+  text-align: center;
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+}
+
+.liste {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.zeile {
+  display: block;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.zeile:hover {
+  border-color: var(--rand-stark);
+}
+
+.zeileKopf {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.zeile h2 {
+  margin: 0.15rem 0 0;
+}
+
+.zaehler {
+  display: flex;
+  gap: 1.3rem;
+  align-items: flex-start;
+}
+
+.zaehlerFeld {
+  text-align: right;
+}
+
+.zaehlerWert {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+.schritt {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--rand);
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+}
+
+.formular {
+  padding: 1.3rem;
+  margin-bottom: 1.4rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.hinweis {
+  margin: 0;
+  color: var(--tinte-weich);
+  font-size: 0.9rem;
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.8rem;
+}
+
+.raster label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.knoepfe {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.skelett {
+  height: 118px;
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .zaehler {
+    gap: 1rem;
+  }
+}

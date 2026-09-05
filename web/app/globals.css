@@ -1,0 +1,316 @@
+@import "tailwindcss";
+
+/* Design tokens taken from the Figma "Session- und Rollenmodell" design system.
+   The colours carry meaning — they are not a decorative choice. */
+:root {
+  --grund: #f7f4ee;
+  --flaeche: #ffffff;
+  --flaeche-still: #faf8f4;
+  --rand: #e6e1d7;
+  --rand-stark: #d6d0c3;
+
+  --tinte: #17160f;
+  --tinte-weich: #55524a;
+  /* 4,6:1 auf --grund. Der frühere Wert (#8b877c) lag bei 3,3:1 und fiel
+     durch WCAG AA — er trug die durchgehend benutzte .label-Klasse. */
+  --tinte-leise: #6f6b60;
+
+  /* KI-Entwurf — noch nicht von Mensch bestätigt */
+  --bernstein: #d99b1c;
+  --bernstein-flaeche: #fdf7e6;
+  --bernstein-tinte: #7a5804;
+
+  /* Fehlt, Widerspruch oder sperrt den Folgeschritt */
+  --rot: #d5342b;
+  --rot-flaeche: #fdf1f0;
+  --rot-tinte: #8f1f19;
+
+  /* Erledigt / bereit */
+  --gruen: #1f8a55;
+  --gruen-flaeche: #ecf7f1;
+  --gruen-tinte: #14603b;
+
+  /* Bestätigter, geprüfter Fakt */
+  --grau: #8b877c;
+  --grau-flaeche: #f2efe9;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@theme inline {
+  --color-grund: var(--grund);
+  --color-flaeche: var(--flaeche);
+  --color-rand: var(--rand);
+  --color-tinte: var(--tinte);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+  --font-sans: var(--sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--grund);
+  color: var(--tinte);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.65rem, 1.2rem + 1.6vw, 2.1rem);
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+/* Kapitälchen-Label in Monospace — das wiederkehrende Strukturelement */
+.label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinte-leise);
+}
+
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 10px;
+}
+
+/* Semantische Randbalken — die Bedeutung sitzt links */
+.balken {
+  border-left: 3px solid var(--rand-stark);
+  padding-left: 0.9rem;
+}
+.balken-entwurf {
+  border-left-color: var(--bernstein);
+  background: var(--bernstein-flaeche);
+}
+.balken-kritisch {
+  border-left-color: var(--rot);
+  background: var(--rot-flaeche);
+}
+.balken-bestaetigt {
+  border-left-color: var(--grau);
+  background: var(--grau-flaeche);
+}
+.balken-bereit {
+  border-left-color: var(--gruen);
+  background: var(--gruen-flaeche);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.chip-entwurf {
+  background: var(--bernstein-flaeche);
+  color: var(--bernstein-tinte);
+  border: 1px solid #f0dfae;
+}
+.chip-kritisch {
+  background: var(--rot-flaeche);
+  color: var(--rot-tinte);
+  border: 1px solid #f4cdc9;
+}
+.chip-bestaetigt {
+  background: var(--grau-flaeche);
+  color: var(--tinte-weich);
+  border: 1px solid var(--rand);
+}
+.chip-bereit {
+  background: var(--gruen-flaeche);
+  color: var(--gruen-tinte);
+  border: 1px solid #bfe3d1;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+/* Ein sichtbarer Fokusring auf allem, was bedienbar ist — der Browser-Default
+   verschwindet auf den dunklen Primärflächen praktisch vollständig. */
+:focus-visible {
+  outline: 2px solid var(--tinte);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.knopf-primaer:focus-visible,
+.nav-eintrag.aktiv:focus-visible {
+  outline-color: #fff;
+  outline-offset: -4px;
+}
+
+/* Auf Touch-Geräten muss jedes Ziel mindestens 44px hoch sein. */
+@media (pointer: coarse) {
+  button,
+  .knopf-primaer,
+  .knopf-sekundaer,
+  .knopf-leise {
+    min-height: 44px;
+  }
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.knopf-primaer {
+  background: var(--tinte);
+  color: #fff;
+  border: 1px solid var(--tinte);
+  border-radius: 7px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+.knopf-primaer:hover:not(:disabled) {
+  background: #000;
+}
+
+.knopf-sekundaer {
+  background: var(--flaeche);
+  color: var(--tinte);
+  border: 1px solid var(--rand-stark);
+  border-radius: 7px;
+  padding: 0.5rem 1rem;
+}
+.knopf-sekundaer:hover:not(:disabled) {
+  border-color: var(--tinte-leise);
+}
+
+.knopf-leise {
+  background: transparent;
+  border: none;
+  color: var(--tinte-weich);
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+.knopf-leise:hover:not(:disabled) {
+  background: var(--grau-flaeche);
+  color: var(--tinte);
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--tinte);
+  background: var(--flaeche);
+  border: 1px solid var(--rand-stark);
+  border-radius: 7px;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--tinte);
+  outline-offset: -1px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--tinte-leise);
+}
+
+/* Inline-Alerts — nie als Modal, immer in der Seite */
+.alarm {
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--rand);
+}
+.alarm-kritisch {
+  background: var(--rot-flaeche);
+  border-color: #f4cdc9;
+  color: var(--rot-tinte);
+}
+.alarm-entwurf {
+  background: var(--bernstein-flaeche);
+  border-color: #f0dfae;
+  color: var(--bernstein-tinte);
+}
+
+.tippen span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 3px;
+  border-radius: 50%;
+  background: var(--tinte-leise);
+  animation: tippen 1.2s infinite ease-in-out;
+}
+.tippen span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.tippen span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes tippen {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tippen span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* Nur für Screenreader: gibt nackten Zahlen ihren Kontext zurück. */
+.nur-vorlesen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

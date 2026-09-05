@@ -6,10 +6,18 @@
 }
 
 .marke {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-family: var(--serif);
   font-size: 0.95rem;
-  color: var(--tinte-leise);
+  color: var(--tinte-weich);
   margin-bottom: 1.8rem;
+}
+
+.marke img {
+  width: 64px;
+  height: auto;
 }
 
 .adresse {

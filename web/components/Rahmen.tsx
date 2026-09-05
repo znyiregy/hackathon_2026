@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -21,7 +22,19 @@ export function Rahmen({ children }: { children: React.ReactNode }) {
     <div className={stil.huelle}>
       <aside className={`${stil.seitenleiste} ${offen ? stil.offen : ""}`}>
         <div className={stil.marke}>
-          <Link href="/" onClick={() => setOffen(false)}>
+          <Link
+            href="/"
+            className={stil.markeLink}
+            onClick={() => setOffen(false)}
+          >
+            <Image
+              src="/logo.png"
+              alt=""
+              width={640}
+              height={344}
+              className={stil.markeBild}
+              priority
+            />
             <span className={stil.markeName}>
               Digital
               <br />

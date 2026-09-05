@@ -20,8 +20,16 @@
   position: relative;
 }
 
-.marke a {
+.markeLink {
+  display: block;
   text-decoration: none;
+}
+
+.markeBild {
+  display: block;
+  width: 132px;
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 .markeName {
@@ -114,6 +122,20 @@
 
   .menue {
     display: block;
+  }
+
+  /* Am Handy nebeneinander statt übereinander — sonst frisst der Kopf
+     zu viel von der Höhe, die der Assistent braucht. */
+  .markeLink {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .markeBild {
+    width: 76px;
+    margin-bottom: 0;
+    flex: none;
   }
 
   /* Navigation und Person sind auf schmalen Bildschirmen eingeklappt,

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -243,7 +244,10 @@ export default function UploadSeite() {
 function Huelle({ children }: { children: React.ReactNode }) {
   return (
     <main className={stil.huelle}>
-      <div className={stil.marke}>Digital Deutschland</div>
+      <div className={stil.marke}>
+        <Image src="/logo.png" alt="" width={640} height={344} priority />
+        <span>Digital Deutschland</span>
+      </div>
       {children}
     </main>
   );

@@ -4,7 +4,10 @@ import logging
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from src.backend.agent import ConfigurationError, build_agent
+from src.backend.api_erzeugung import router as erzeugung_router
+from src.backend.api_vorgaenge import router as vorgaenge_router
 from src.backend.attachments import AttachmentError, AttachmentTooLargeError
 from src.backend.config import get_settings
 from src.backend.schemas import ChatRequest, ChatResponse, HealthResponse
@@ -12,7 +15,19 @@ from src.backend.service import AgentInvocationError, ChatService
 
 
 logger = logging.getLogger(__name__)
-app = FastAPI(title="Hackathon LangGraph API", version="0.1.0")
+app = FastAPI(title="Digital Deutschland API", version="0.2.0")
+
+# The Next.js frontend runs on its own port during local development.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origin_liste,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(vorgaenge_router)
+app.include_router(erzeugung_router)
 
 
 @lru_cache

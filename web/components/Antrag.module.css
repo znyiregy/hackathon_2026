@@ -1,0 +1,147 @@
+.raster {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.artefakt {
+  padding: 0.7rem 0.9rem;
+  border-radius: 0 7px 7px 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.kopf {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.zweck {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--tinte-weich);
+}
+
+.gesperrt {
+  font-size: 0.82rem;
+}
+
+.entwurf {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-left: 3px solid var(--bernstein);
+  border-radius: 0 7px 7px 0;
+  padding: 0.75rem 0.9rem;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.luecken {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.klein {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.84rem;
+}
+
+/* Übertragungsblatt */
+.blattKopf {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.feld {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.feldName {
+  font-size: 0.82rem;
+  color: var(--tinte-weich);
+}
+
+.feldWert {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.feldLeer {
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  color: var(--rot-tinte);
+}
+
+.kopieren {
+  flex: none;
+}
+
+/* Manifest */
+.manifest {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.zeile {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--rand);
+  border-radius: 7px;
+  background: var(--flaeche-still);
+}
+
+.dateiname {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 0.73rem;
+  color: var(--tinte-leise);
+  overflow-wrap: anywhere;
+}
+
+.protokoll {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: auto;
+  background: var(--flaeche-still);
+  border: 1px solid var(--rand);
+  border-radius: 7px;
+  padding: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+.knopfreihe {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 520px) {
+  .feld {
+    grid-template-columns: 1fr;
+  }
+}

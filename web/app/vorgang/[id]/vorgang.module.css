@@ -1,0 +1,105 @@
+.kopf {
+  margin-bottom: 1rem;
+}
+
+.zurueck {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: var(--tinte-weich);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.zurueck:hover {
+  color: var(--tinte);
+}
+
+.kopf h1 {
+  margin: 0.1rem 0 0;
+}
+
+.unterzeile {
+  color: var(--tinte-weich);
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.umschalter {
+  display: none;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.umschalter button {
+  flex: 1;
+  background: var(--flaeche);
+  border: 1px solid var(--rand-stark);
+  border-radius: 7px;
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.umschalterAktiv {
+  background: var(--tinte) !important;
+  color: #fff;
+  border-color: var(--tinte) !important;
+}
+
+.punkt {
+  background: var(--rot);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+}
+
+.buehne {
+  display: grid;
+  /* Der Assistent bekommt mehr Platz — er ist die Hauptfläche. */
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1rem;
+  /* dvh statt vh: 100vh schließt auf iOS die Adressleiste ein, wodurch die
+     Eingabezeile des Assistenten hinter die Browserleiste rutscht. */
+  height: calc(100dvh - 230px);
+  min-height: 480px;
+}
+
+.spalte {
+  min-height: 0;
+}
+
+.skelett {
+  height: 320px;
+  opacity: 0.5;
+}
+
+@media (max-width: 1050px) {
+  .umschalter {
+    display: flex;
+  }
+
+  .buehne {
+    /* minmax(0, 1fr), nicht 1fr: eine reine 1fr-Spalte darf nicht unter die
+       Mindestbreite ihres Inhalts schrumpfen und schiebt die Seite dann
+       seitlich auf — auf 375px waren das 53px Überlauf. */
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 0;
+  }
+
+  .spalte {
+    display: none;
+    height: calc(100dvh - 260px);
+    min-height: 420px;
+  }
+
+  .sichtbar {
+    display: block;
+  }
+}

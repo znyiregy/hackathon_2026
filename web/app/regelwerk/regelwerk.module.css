@@ -1,0 +1,52 @@
+.unterzeile {
+  color: var(--tinte-weich);
+  margin: 0.3rem 0 0;
+  font-size: 0.92rem;
+}
+
+.tabelleHuelle {
+  overflow-x: auto;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 10px;
+}
+
+.tabelle {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 640px;
+}
+
+.tabelle th,
+.tabelle td {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--rand);
+  vertical-align: top;
+  font-size: 0.88rem;
+}
+
+.tabelle th {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinte-leise);
+  font-weight: 400;
+}
+
+.tabelle tr:last-child td {
+  border-bottom: none;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.hinweis {
+  color: var(--tinte-weich);
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+}

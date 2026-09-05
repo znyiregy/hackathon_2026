@@ -10,3 +10,15 @@ htmlcov/
 dist/
 build/
 /data
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Playwright
+/web/test-results/
+/web/playwright-report/
+/web/blob-report/
+/web/.playwright/

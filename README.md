@@ -1,51 +1,41 @@
-# Hackathon chat monorepo
+# Digital Deutschland
 
-A small local-development application with:
+Eine KI-gestützte Vorbereitungs- und Qualitätssicherungsschicht für die
+Verwaltungsarbeit deutscher Architekturbüros. Der MVP deckt einen bewusst engen,
+real schmerzhaften Fall ab: **Nutzungsänderung Wohnen → Ferienhaus in Bonn.**
 
-- a FastAPI backend exposing a LangGraph-backed OpenAI agent;
-- one safe arithmetic tool;
-- text, image, and PDF attachments transported as base64 JSON and retained in
-  per-chat agent state for download;
-- a Dash chat frontend using the backend over REST.
+Das Produkt reicht **niemals** etwas bei einer Behörde ein und trifft **keine**
+rechtliche Aussage. Es benennt Anforderungen, Belege und offene Fragen.
 
-This is intentionally a prototype. Conversation state is held in memory and is
-lost whenever the backend restarts.
+## Das Prinzip
 
-## Architecture
+> Aufgabe der KI sind Extraktion und Formulierung.
+> Aufgabe des Systems sind Vergleich und Urteil.
+
+Das Modell liest Dokumente und formuliert Befunde. Deterministischer Code
+vergleicht Werte, wertet Regeln aus und entscheidet über Schweregrade. Diese
+Trennung macht das Produkt vertrauenswürdig genug für haftungsrelevante Arbeit.
+
+## Aufbau
 
 ```text
-Dash browser UI
-  └─ POST /chat (text + base64 uploads)
-       └─ FastAPI API
-            └─ ChatService
-                 └─ LangGraph agent + in-memory checkpoint
-                      ├─ OpenAI chat model
-                      ├─ calculation tool
-                      ├─ send_file tool
-                      └─ analyze_file subagent tool
+web/            Next.js-Oberfläche (Deutsch, mobil-tauglich)
+  app/          Seiten: Vorgangsübersicht, Vorgang, externer Upload, Regelwerk
+  components/   Assistent (Hauptfläche) und Akte (Reiter)
+  e2e/          Playwright-Tests für den kritischen Pfad
+src/backend/
+  assistent.py      LangGraph-Agent, der die Architektin durch den Fall führt
+  auswertung.py     Dokument lesen: Typ, Qualität, Fakten mit Herkunft
+  regeln.py         Deterministisch: Vergleich, Anforderungen, Prüfung
+  katalog.py        Kuratiertes Anforderungs- und Faktenmodell (Bonn)
+  vorgang_service.py  Aufnahme und Neubewertung
+  erzeugung.py      Übertragungsblatt, Entwürfe, Paket, Prüfprotokoll
+  store.py          In-Memory-Ablage (Prototyp: Neustart löscht alles)
 ```
 
-The frontend encodes browser uploads as base64 JSON. The backend validates each
-file and stores its original name, MIME type, and base64 content in LangGraph
-state for that chat thread. Only filenames are added to the parent agent's
-prompt; file content remains outside its normal conversation context.
+## Einrichten
 
-When the agent uses a tool, its tool message is included in the API response.
-The Dash frontend renders tool status messages and turns file artifacts into
-download links.
-
-## What the agent can do
-
-- Answer normal chat questions while retaining conversation context per thread.
-- Calculate arithmetic expressions with the safe `calculation` tool.
-- List and return a previously uploaded file through `send_file`; the user sees
-  it as a download link.
-- Analyze a selected stored TXT, MD, CSV, JSON, PNG, JPEG, or PDF file through
-  `analyze_file`. That subagent receives the user instruction and only the
-  selected file's material; text is capped at 200,000 characters, while images
-  and PDF pages are converted to JPEG with a maximum side of 1400 pixels.
-
-## Setup
+Backend:
 
 ```bash
 conda env create -f environment.yml
@@ -53,90 +43,101 @@ conda activate hackathon
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY`, `OPENAI_MODEL`, and `REASONING_EFFORT` in `.env`. The
-model must support image input and function calling. Use a reasoning effort the
-selected model supports, such as `medium`. `BACKEND_URL` and `FRONTEND_PORT`
-are optional.
+`OPENAI_API_KEY`, `OPENAI_MODEL` und `REASONING_EFFORT` in `.env` setzen. Das
+Modell muss Bildeingabe und Function Calling beherrschen.
 
-## Run
+Oberfläche (braucht Node 20 oder neuer):
 
-Start the backend from the repository root:
+```bash
+cd web && npm install
+```
+
+## Starten
 
 ```bash
 conda activate hackathon
 uvicorn src.backend.api:app --reload --port 8000
 ```
 
-In a second terminal, start the frontend:
+In einem zweiten Terminal:
 
 ```bash
-conda activate hackathon
-python -m src.frontend.app
+cd web && npm run build && npx next start -p 3000
 ```
 
-Open <http://127.0.0.1:8050>. FastAPI's interactive API documentation is at
-<http://127.0.0.1:8000/docs>.
+Dann <http://127.0.0.1:3000> öffnen.
 
-## REST API
+**Für Vorführungen den Produktions-Build nehmen, nicht `npm run dev`** — im
+Entwicklungsmodus hydriert React in manchen eingebetteten Browsern nicht.
 
-`GET /health` returns `{"status": "ok"}`.
+Die API-Dokumentation liegt unter <http://127.0.0.1:8000/docs>.
 
-`POST /chat` accepts:
+### Von einem Handy aus testen
 
-```json
-{
-  "thread_id": "2f8e5cc6-4c82-4dd9-a62f-c429208159b3",
-  "message": "Summarize these files",
-  "files": [
-    {
-      "name": "notes.txt",
-      "mime_type": "text/plain",
-      "content_base64": "SGVsbG8="
-    }
-  ]
-}
+`NEXT_PUBLIC_BACKEND_URL` auf die LAN-Adresse setzen und dieselbe Adresse in
+`.env` unter `CORS_ORIGINS` erlauben:
+
+```bash
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.228:3000
 ```
-
-Supported uploads are TXT, MD, CSV, JSON, PDF, PNG, and JPEG. A request may
-contain at most 10 MiB of decoded file data. PDFs are limited to 10 pages. The
-original file data is stored for the chat thread, but never added to the parent
-agent's LLM context. The agent sees only uploaded filenames and can return a
-requested file through `send_file`, or analyze a selected file through its
-`analyze_file` subagent tool.
-
-Responses include the final `answer` and ordered `messages`. Tool messages are
-forwarded to the frontend, so their status text is shown in the transcript. A
-tool can also return a downloadable file in its LangChain `ToolMessage`
-artifact:
-
-```python
-(
-    "Report created.",
-    {
-        "attachments": [
-            {
-                "name": "report.txt",
-                "mime_type": "text/plain",
-                "content_base64": "SGVsbG8=",
-            }
-        ]
-    },
-)
-```
-
-Use this tuple with a LangChain tool configured with
-`response_format="content_and_artifact"`. The frontend renders each attachment
-as a download link.
 
 ## Tests
 
-The automated tests do not call OpenAI and do not need an API key:
+Backend — ohne KI, ohne Kosten, ohne Schlüssel:
 
 ```bash
 conda activate hackathon
 pytest -q
 ```
 
-For a manual smoke test, start both services and verify normal chat, a request
-such as `Calculate (17 * 4) + sqrt(81)`, and TXT, image, and PDF uploads. Click
-**New chat** and confirm that prior context is no longer used.
+Oberfläche — echter Browser, kritischer Pfad, Desktop und Handy:
+
+```bash
+cd web && npm run e2e
+```
+
+Der Browser-Test setzt das Backend auf Netzwerkebene ab (`e2e/backend.ts`), ruft
+also nie OpenAI. Geprüft wird der Weg, den auch die Vorführung nimmt: Vorgang
+anlegen → Unterlagen hochladen → Assistent meldet, was sich geändert hat →
+Widerspruch erscheint → lösen → Paket bleibt gesperrt, solange etwas Kritisches
+offen ist. Dazu die externe Upload-Seite, das Verhalten bei ausgefallenem
+Backend und zwei Mobil-Prüfungen.
+
+## Was die Anwendung kann
+
+| Fläche | Inhalt |
+|---|---|
+| **Assistent** | Führt das Gespräch, fragt nach dem nächsten Schritt, erzeugt Upload-Links |
+| **Übersicht** | Kennzahlen, nächster sinnvoller Schritt, Genehmigungskonstellation |
+| **Unterlagen** | Typ, Qualität, Benennungsvorschlag; Unsicheres steht oben |
+| **Projektdaten** | ~35 typisierte Fakten mit Herkunft und Beleg, einzeln bestätigbar |
+| **Widersprüche** | Beide Werte nebeneinander mit Quelle; die Architektin entscheidet |
+| **Anforderungen** | Was das Verfahren verlangt, was belegt ist, was fehlt |
+| **Prüfung** | Befunde nach Schweregrad, mit Freigabetor |
+| **Antrag** | Betriebsbeschreibung, Anschreiben, Begründungsgerüst — mit Lücken statt Erfindungen |
+| **Paket** | Portal-Übertragungsblatt zum Kopieren, Manifest, Prüfprotokoll |
+| **Externer Upload** | Ohne Login, fürs Handy, mit sofortiger Qualitätsrückmeldung |
+
+### Was das Farbsystem bedeutet
+
+Die Farben tragen Bedeutung, sie sind keine Gestaltungsentscheidung:
+
+| Farbe | Bedeutung |
+|---|---|
+| Bernstein | KI-Entwurf — noch nicht von einem Menschen bestätigt |
+| Grau | Bestätigter, geprüfter Fakt |
+| Rot | Fehlt, Widerspruch, oder sperrt den Folgeschritt |
+| Grün | Erledigt / bereit |
+
+## Grenzen des Prototyps
+
+- **Der Zustand liegt im Arbeitsspeicher.** Ein Neustart des Backends löscht
+  alle Vorgänge. Während einer Vorführung nicht neu starten.
+- **Kein Login, keine Rollen.** Bewusst so entschieden; für ein Produkt, das
+  Grundbuchauszüge verarbeitet, muss beides nachgeholt werden.
+- **Nur Bonn, nur die Nutzungsänderung.** Anforderungs- und Faktenmodell sind
+  handkuratiert und müssen von einer bauvorlageberechtigten Person geprüft
+  werden, bevor man ihnen traut.
+- **Live-Auswertung schwankt.** Dieselben Unterlagen können bei zwei Läufen
+  leicht unterschiedliche Fakten ergeben. Den Demo-Ablauf vorher einmal
+  durchspielen.

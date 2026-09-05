@@ -1,0 +1,281 @@
+import { expect, test } from "@playwright/test";
+
+import { backendAus, backendStellen, VORGANG_ID } from "./backend";
+
+/**
+ * Open the Akte and switch to a tab.
+ *
+ * Below 1050px the assistant and the Akte share the screen through a
+ * switcher, because the assistant is the primary surface and must not be
+ * squeezed. The same walk therefore needs one extra tap on a phone.
+ */
+async function reiterOeffnen(page: import("@playwright/test").Page, name: string | RegExp) {
+  const umschalter = page.getByRole("tab", { name: "Akte" });
+  if (await umschalter.isVisible()) {
+    await umschalter.click();
+  }
+  await page.getByRole("tab", { name }).click();
+}
+
+/**
+ * The critical path, end to end in a real browser.
+ *
+ * This is the walk the demo takes and the walk an Architektin takes on her
+ * first real case: create a Vorgang → upload documents → the assistant reports
+ * what changed → a conflict appears → resolve it → the package stays locked
+ * because something critical is still open.
+ */
+test.describe("Kritischer Pfad", () => {
+  test("Vorgang anlegen, Unterlagen hochladen, Widerspruch lösen", async ({
+    page,
+  }) => {
+    const zustand = await backendStellen(page);
+
+    // -- 1. Leere Übersicht ------------------------------------------------
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Vorgangsübersicht" }),
+    ).toBeVisible();
+    await expect(page.getByText("Noch kein Vorgang")).toBeVisible();
+
+    // -- 2. Vorgang anlegen ------------------------------------------------
+    await page.getByRole("button", { name: "Vorgang anlegen" }).click();
+    await page
+      .getByRole("textbox", { name: "Straße und Hausnummer" })
+      .fill("Am Weiher 7");
+
+    // Die Zweckentfremdungs-Warnung erscheint bei über 90 Tagen sofort —
+    // das ist der Punkt, den sonst keine Behörde prüft.
+    await expect(
+      page.getByText(/Zweckentfremdungsgenehmigung beim Amt für Soziales/),
+    ).toBeVisible();
+
+    await page
+      .getByRole("button", { name: "Vorgang anlegen", exact: true })
+      .last()
+      .click();
+
+    // -- 3. Der Assistent ist die Hauptfläche ------------------------------
+    await expect(page).toHaveURL(new RegExp(`/vorgang/${VORGANG_ID}`));
+    await expect(
+      page.getByRole("heading", { name: "Am Weiher 7, 53229 Bonn" }),
+    ).toBeVisible();
+    await expect(page.getByText(/Guten Tag\. Ich bereite mit Ihnen/)).toBeVisible();
+
+    // Der kritische Parallelstrang steht sichtbar in der Akte.
+    await reiterOeffnen(page, "Übersicht");
+    await expect(page.getByText("Zweckentfremdung").first()).toBeVisible();
+    await expect(page.getByText("kritisch").first()).toBeVisible();
+
+    // -- 4. Assistent antwortet und zeigt seine Werkzeuge ------------------
+    const assistentUmschalter = page.getByRole("tab", { name: "Assistent" });
+    if (await assistentUmschalter.isVisible()) await assistentUmschalter.click();
+    await page.getByRole("button", { name: "Welche Unterlagen fehlen noch?" }).click();
+    await expect(
+      page.getByText(/Es fehlen derzeit fünf Pflichtunterlagen/),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Stand des Vorgangs abgefragt/)).toBeVisible();
+    expect(zustand.assistentAufrufe).toBeGreaterThan(0);
+
+    // -- 5. Unterlagen hochladen ------------------------------------------
+    await page.setInputFiles('input[type="file"][multiple]', [
+      {
+        name: "flurkarte.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("%PDF-1.4 testinhalt"),
+      },
+    ]);
+    await expect(page.getByText(/flurkarte\.pdf → flurkarte/)).toBeVisible({
+      timeout: 20_000,
+    });
+
+    // -- 6. Der Widerspruch ist da ----------------------------------------
+    await reiterOeffnen(page, /Widersprüche/);
+    // An die Akte gebunden: auf dem Handy liegt der Assistent daneben und
+    // enthält teils dieselben Wörter.
+    const akte = page.getByRole("tabpanel");
+    await expect(akte.getByText("Eigentümer").first()).toBeVisible();
+    await expect(akte.getByText("Gerold Brämer").first()).toBeVisible();
+    await expect(akte.getByText("Jennifer Hönig-Singh").first()).toBeVisible();
+    // Beide Quellen werden genannt — das ist der Beleg, nicht die Behauptung.
+    await expect(akte.getByText("bauschein.pdf").first()).toBeVisible();
+
+    // -- 7. Widerspruch lösen ---------------------------------------------
+    await page
+      .getByRole("button", { name: "Jennifer Hönig-Singh übernehmen" })
+      .click();
+    await expect(
+      akte.getByText("Es sind keine Widersprüche offen."),
+    ).toBeVisible({ timeout: 10_000 });
+    expect(zustand.konfliktOffen).toBe(false);
+
+    // -- 8. Freigabe bleibt gesperrt, weil Kritisches offen ist ------------
+    await reiterOeffnen(page, /Prüfung/);
+    await expect(page.getByText(/Freigabe gesperrt/)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Paket einfrieren" }),
+    ).toBeDisabled();
+
+    // Die Zweckentfremdung ist der Grund und wird benannt.
+    await expect(page.getByText(/überschreitet die Schwelle von 90 Tagen/)).toBeVisible();
+  });
+
+  test("Projektdaten bestätigen und Beleg einsehen", async ({ page }) => {
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+
+    await reiterOeffnen(page, "Projektdaten");
+    await expect(page.getByText("Flurstück").first()).toBeVisible();
+    await expect(page.getByText("KI-Entwurf").first()).toBeVisible();
+
+    // Der Beleg ist ohne Maus erreichbar — nicht in einem Tooltip versteckt.
+    await page.getByText("Beleg anzeigen").first().click();
+    await expect(page.getByText("Flurstück: 1477")).toBeVisible();
+
+    await page.getByRole("button", { name: "Bestätigen" }).first().click();
+    // Der Status-Chip wechselt von "KI-Entwurf" auf "bestätigt".
+    await expect(
+      page.locator(".chip-bestaetigt", { hasText: "bestätigt" }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("Antragsentwurf entsteht erst, wenn die Grundlagen stehen", async ({
+    page,
+  }) => {
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+
+    await reiterOeffnen(page, "Antrag");
+
+    // Was noch nicht kann, sagt auch warum.
+    await expect(page.getByText("Voraussetzung fehlt")).toBeVisible();
+    await expect(page.getByText(/Bestätigen Sie zuerst: Flurstück/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Entwurf erzeugen" }).first().click();
+    await expect(page.getByText(/Die Ferienwohnung im 1. Obergeschoss/)).toBeVisible({
+      timeout: 15_000,
+    });
+    // Lücken sind sichtbar markiert, nicht stillschweigend erfunden.
+    await expect(page.getByText("Gästezahl ergänzen").first()).toBeVisible();
+  });
+
+  test("Portal-Übertragungsblatt trennt bestätigt, Entwurf und fehlend", async ({
+    page,
+  }) => {
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+
+    await reiterOeffnen(page, "Paket");
+    await expect(page.getByText("Portal-Übertragungsblatt")).toBeVisible();
+    await expect(page.getByText("Am Weiher 7").first()).toBeVisible();
+    await expect(
+      page.getByText("Noch kein Wert. Im Faktenblatt ergänzen."),
+    ).toBeVisible();
+
+    // Das Produkt reicht nie selbst ein und sagt das auch.
+    await expect(
+      page.getByText(/Die Einreichung erfolgt durch Sie im Bauportal\.NRW/),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Externe Upload-Seite", () => {
+  test("ohne Login bedienbar, ohne Details zum Vorgang", async ({ page }) => {
+    await backendStellen(page);
+    await page.goto("/upload/testtoken123");
+
+    await expect(
+      page.getByRole("heading", { name: "Unterlagen hochladen" }),
+    ).toBeVisible();
+    await expect(page.getByText("Am Weiher 7, 53229 Bonn").first()).toBeVisible();
+    await expect(page.getByText("Grundbuchauszug (alle Seiten)")).toBeVisible();
+
+    // Frau Weber darf das Wort "Konflikt" nie sehen.
+    await expect(page.getByText(/Widerspruch|Konflikt/)).toHaveCount(0);
+    // Und es gibt keinen Login.
+    await expect(page.getByText(/Anmelden|Passwort/)).toHaveCount(0);
+
+    await expect(page.getByRole("button", { name: "Absenden" })).toBeDisabled();
+  });
+
+  test("abgelaufener Link meldet neutral, ohne Fehlercode", async ({ page }) => {
+    await backendStellen(page);
+    await page.goto("/upload/abgelaufen");
+
+    await expect(
+      page.getByRole("heading", { name: "Dieser Link ist nicht mehr gültig" }),
+    ).toBeVisible();
+    await expect(page.getByText(/404|Fehler|error/i)).toHaveCount(0);
+  });
+});
+
+test.describe("Wenn der Motor aus ist", () => {
+  test("die Übersicht sagt es und bietet einen erneuten Versuch", async ({
+    page,
+  }) => {
+    await backendAus(page);
+    await page.goto("/");
+
+    await expect(page.getByText(/Motor ist nicht erreichbar/)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByRole("button", { name: "Erneut versuchen" }),
+    ).toBeVisible();
+  });
+
+  test("die Upload-Seite behauptet nicht, der Link sei ungültig", async ({
+    page,
+  }) => {
+    await backendAus(page);
+    await page.goto("/upload/testtoken123");
+
+    // Ein ausgefallener Motor ist kein abgelaufener Link — sonst gibt die
+    // Eigentümerin auf, obwohl mit ihrem Link alles in Ordnung ist.
+    await expect(
+      page.getByRole("heading", { name: "Gerade nicht erreichbar" }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole("heading", { name: "Dieser Link ist nicht mehr gültig" }),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("Mobil", () => {
+  test("keine Seite schiebt sich seitlich auf", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobil", "Nur im Mobil-Projekt sinnvoll.");
+    await backendStellen(page);
+
+    for (const pfad of ["/", `/vorgang/${VORGANG_ID}`, "/upload/testtoken123", "/regelwerk"]) {
+      await page.goto(pfad);
+      await page.waitForLoadState("networkidle");
+
+      // Ein waagerechter Überlauf ist auf dem Handy immer ein Fehler: die
+      // Nutzerin schiebt die Seite versehentlich zur Seite und verliert den
+      // Bezug. Eine reine 1fr-Rasterspalte war hier schon einmal die Ursache.
+      const masse = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        dokument: document.documentElement.scrollWidth,
+      }));
+      expect(masse.dokument, `Waagerechter Überlauf auf ${pfad}`).toBeLessThanOrEqual(
+        masse.viewport + 1,
+      );
+    }
+  });
+
+  test("alle Reiter der Akte sind erreichbar und groß genug", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobil", "Nur im Mobil-Projekt sinnvoll.");
+    await backendStellen(page);
+    await page.goto(`/vorgang/${VORGANG_ID}`);
+    await page.getByRole("tab", { name: "Akte" }).click();
+
+    for (const name of ["Übersicht", "Unterlagen", "Projektdaten", "Widersprüche", "Anforderungen", "Prüfung", "Antrag", "Paket"]) {
+      const reiter = page.getByRole("tab", { name: new RegExp(`^${name}`) });
+      await expect(reiter).toBeVisible();
+      const kasten = await reiter.boundingBox();
+      // 44px ist die Mindestgröße, die sich mit dem Daumen sicher treffen lässt.
+      expect(kasten!.height, `${name} ist zu klein zum Antippen`).toBeGreaterThanOrEqual(44);
+      await reiter.click();
+    }
+  });
+});

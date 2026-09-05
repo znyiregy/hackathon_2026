@@ -1,0 +1,72 @@
+.huelle {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 4rem;
+  min-height: 100vh;
+}
+
+.marke {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--tinte-leise);
+  margin-bottom: 1.8rem;
+}
+
+.adresse {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--tinte-weich);
+  margin: 0.2rem 0 1.2rem;
+}
+
+.angefordert {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin: 1rem 0;
+}
+
+.angefordert ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.knoepfe {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.2rem 0;
+}
+
+/* Große Flächen — die Seite wird am Handy bedient. */
+.gross {
+  padding: 0.95rem 1rem;
+  font-size: 1.02rem;
+  width: 100%;
+  min-height: 48px;
+}
+
+.liste {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.liste li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 7px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.absenden {
+  margin-top: 1rem;
+}

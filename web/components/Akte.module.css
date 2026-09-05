@@ -1,0 +1,377 @@
+.akte {
+  display: flex;
+  flex-direction: column;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.reiter {
+  display: flex;
+  gap: 0.1rem;
+  padding: 0.5rem 0.5rem 0;
+  border-bottom: 1px solid var(--rand);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Acht Reiter passen auf dem Handy nicht nebeneinander. Ohne diesen
+     ausblendenden Rand rechts wäre nicht erkennbar, dass es weitergeht —
+     "Anforderungen" und "Prüfung" blieben unauffindbar. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 24px),
+    transparent
+  );
+  /* Bewusst kein scroll-behavior: smooth — eine dauernd gleitende Leiste
+     kommt nie zur Ruhe, und ein Tipp auf einen halb sichtbaren Reiter geht
+     ins Leere. Der Sprung ist hier die bessere Bedienung. */
+}
+
+/* Auf schmalen Bildschirmen brechen die acht Reiter um, statt seitlich zu
+   scrollen. Am rechten Rand einer Scrollleiste sind sie mit dem Daumen kaum
+   zu treffen — und "Anforderungen" und "Prüfung" lagen dort. */
+@media (max-width: 700px) {
+  .reiter {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+    row-gap: 0.15rem;
+  }
+
+  .reiterKnopf {
+    padding: 0.5rem 0.55rem 0.55rem;
+    font-size: 0.84rem;
+  }
+}
+
+.reiter::-webkit-scrollbar {
+  display: none;
+}
+
+.reiterKnopf {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.45rem 0.65rem 0.6rem;
+  color: var(--tinte-weich);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.reiterAktiv {
+  color: var(--tinte);
+  border-bottom-color: var(--tinte);
+  font-weight: 500;
+}
+
+.punkt {
+  background: var(--rot);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  min-width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+
+.inhalt {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  min-height: 240px;
+  min-width: 0;
+}
+
+.stapel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.stapelWeit {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.leer {
+  color: var(--tinte-leise);
+  font-size: 0.9rem;
+}
+
+/* Übersicht */
+.feld {
+  padding: 0.7rem 0.9rem;
+  border-radius: 0 7px 7px 0;
+}
+
+.feld p {
+  margin: 0.25rem 0 0;
+  font-size: 0.92rem;
+}
+
+.quelle {
+  font-size: 0.76rem;
+  color: var(--tinte-leise);
+}
+
+.kacheln {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.6rem;
+}
+
+.kachel {
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  background: var(--flaeche-still);
+}
+
+.kachelWert {
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  line-height: 1.2;
+}
+
+.kachelZeile {
+  font-size: 0.78rem;
+  color: var(--tinte-weich);
+}
+
+.straenge {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.strangKopf {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Dokumente */
+.dokument {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0 7px 7px 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dokumentKopf {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  /* Lange Dateinamen ohne Leerzeichen sind der Normalfall in Bauakten. */
+  overflow-wrap: anywhere;
+}
+
+.vorschlag {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.fliess {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--tinte-weich);
+}
+
+.aktion {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.aktion input {
+  max-width: 220px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Fakten */
+.fakt {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.faktOben {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.faktName {
+  font-size: 0.9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.faktWert {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.faktUnten {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.faktQuelle {
+  font-size: 0.74rem;
+  color: var(--tinte-leise);
+}
+
+/* Konflikte */
+.konflikt {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0 7px 7px 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.konfliktKopf {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.werte {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.wert {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+}
+
+.wertZahl {
+  font-family: var(--mono);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.wertQuelle {
+  font-size: 0.73rem;
+  color: var(--tinte-leise);
+}
+
+.konfliktHinweis {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.knopfreihe {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.klein {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.84rem;
+}
+
+.knopfreihe input {
+  max-width: 180px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Anforderungen */
+.anforderung {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.anforderungOben {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.grundlage {
+  font-size: 0.73rem;
+  color: var(--tinte-leise);
+}
+
+/* Prüfung */
+.befund {
+  padding: 0.55rem 0.8rem;
+  border-radius: 0 7px 7px 0;
+  font-size: 0.9rem;
+}
+
+.befund summary {
+  cursor: pointer;
+}
+
+.befund dl {
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.befund dd {
+  margin: 0 0 0.4rem;
+  font-size: 0.86rem;
+}
+
+.pruefkopfKnoepfe {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.pruefsumme {
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.beleg {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.beleg summary {
+  cursor: pointer;
+  color: var(--tinte-weich);
+}
+
+.beleg blockquote {
+  margin: 0.3rem 0 0;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--rand-stark);
+  color: var(--tinte-weich);
+  overflow-wrap: anywhere;
+}

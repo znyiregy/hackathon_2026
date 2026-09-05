@@ -4,7 +4,8 @@ A small local-development application with:
 
 - a FastAPI backend exposing a LangGraph-backed OpenAI agent;
 - one safe arithmetic tool;
-- text, image, and PDF attachments transported as base64 JSON;
+- text, image, and PDF attachments transported as base64 JSON and retained in
+  per-chat agent state for download;
 - a Dash chat frontend using the backend over REST.
 
 This is intentionally a prototype. Conversation state is held in memory and is
@@ -19,9 +20,8 @@ cp .env.example .env
 ```
 
 Set `OPENAI_API_KEY`, `OPENAI_MODEL`, and `REASONING_EFFORT` in `.env`. The
-model must support image input and function calling. Use a reasoning effort the
-selected model supports, such as `medium`. `BACKEND_URL` and `FRONTEND_PORT`
-are optional.
+model must support function calling. Use a reasoning effort the selected model
+supports, such as `medium`. `BACKEND_URL` and `FRONTEND_PORT` are optional.
 
 ## Run
 
@@ -63,10 +63,10 @@ Open <http://127.0.0.1:8050>. FastAPI's interactive API documentation is at
 ```
 
 Supported uploads are TXT, MD, CSV, JSON, PDF, PNG, and JPEG. A request may
-contain at most 10 MiB of decoded file data. PDFs are limited to 10 pages.
-Images and rendered PDF pages are converted to JPEG quality 92 with a maximum
-long side of 1400 pixels. Combined text attachment content is truncated at
-200,000 characters with a visible notice.
+contain at most 10 MiB of decoded file data. PDFs are limited to 10 pages. The
+original file data is stored for the chat thread, but never added to LLM
+context; the agent sees only uploaded filenames and can return a requested file
+through its `send_file` tool.
 
 Responses include the final `answer` and ordered `messages`. Tool messages are
 forwarded to the frontend, so their status text is shown in the transcript. A

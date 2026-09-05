@@ -4,7 +4,7 @@ from typing import Any
 
 from langchain.messages import HumanMessage, ToolMessage
 
-from src.backend.attachments import prepare_attachments
+from src.backend.attachments import validate_attachments
 from src.backend.schemas import ChatMessage, ChatRequest, DownloadAttachment
 
 
@@ -89,14 +89,21 @@ class ChatService:
         self._agent = agent
 
     async def chat(self, request: ChatRequest) -> ChatResult:
-        prepared = prepare_attachments(request.files)
-        prompt = request.message.strip() or "Please analyze the attached file or files."
-        content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
-        content.extend(prepared.content_blocks)
+        validate_attachments(request.files)
+        prompt = request.message.strip() or "The user uploaded files."
+        state_input: dict[str, Any] = {"messages": [HumanMessage(content=prompt)]}
+        if request.files:
+            filenames = "\n".join(f"- {attachment.name}" for attachment in request.files)
+            state_input["messages"] = [
+                HumanMessage(content=f"{prompt}\n\nFiles stored for this conversation:\n{filenames}")
+            ]
+            state_input["attachments"] = {
+                attachment.name: attachment.model_dump() for attachment in request.files
+            }
 
         try:
             result = await self._agent.ainvoke(
-                {"messages": [HumanMessage(content=content)]},
+                state_input,
                 config={"configurable": {"thread_id": str(request.thread_id)}},
             )
             messages = result.get("messages", [])

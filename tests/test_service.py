@@ -10,8 +10,10 @@ from src.backend.service import ChatService
 class MemoryFakeAgent:
     def __init__(self):
         self.messages_by_thread = {}
+        self.last_payload = None
 
     async def ainvoke(self, payload, config):
+        self.last_payload = payload
         thread_id = config["configurable"]["thread_id"]
         count = self.messages_by_thread.get(thread_id, 0) + 1
         self.messages_by_thread[thread_id] = count
@@ -38,6 +40,28 @@ async def test_attachment_only_message_gets_a_default_instruction():
         files=[{"name": "a.txt", "mime_type": "text/plain", "content_base64": "aGVsbG8="}],
     )
     assert (await service.chat(request)).answer == "message 1"
+
+
+@pytest.mark.anyio
+async def test_uploaded_files_are_stored_but_not_sent_to_the_model():
+    agent = MemoryFakeAgent()
+    request = ChatRequest(
+        thread_id=uuid4(),
+        message="Send the report back.",
+        files=[{"name": "report.txt", "mime_type": "text/plain", "content_base64": "cHJpdmF0ZSBjb250ZW50"}],
+    )
+
+    await ChatService(agent).chat(request)
+    payload = agent.last_payload
+    message = payload["messages"][0]
+
+    assert isinstance(message.content, str)
+    assert message.content == "Send the report back.\n\nFiles stored for this conversation:\n- report.txt"
+    assert "cHJpdmF0ZSBjb250ZW50" not in message.content
+    assert "private content" not in message.content
+    assert payload["attachments"] == {
+        "report.txt": {"name": "report.txt", "mime_type": "text/plain", "content_base64": "cHJpdmF0ZSBjb250ZW50"}
+    }
 
 
 class ToolMessageAgent:

@@ -1,5 +1,6 @@
 """Construction of the LangGraph-backed chat agent."""
 
+from datetime import date
 from typing import Annotated, Any, TypedDict
 
 from langchain.agents import create_agent
@@ -16,7 +17,49 @@ from src.backend.config import Settings
 from src.backend.schemas import Attachment
 
 
-SYSTEM_PROMPT = """You are a helpful assistant in a local hackathon application.
+BONN_BEUEL_DEMO_PLAYBOOK = """Bonn-Beuel intake playbook:
+When the current user turn contains a ``Files stored for this conversation``
+list and asks for analysis, renaming, review, or is the default upload-only
+request, treat every filename in that current list as one dossier. Do not
+select only one file and do not answer before completing both passes below.
+
+First pass: call analyze_file exactly once for every current filename. Ask for
+the document type, supported document date (or uncertainty), named people and
+property facts, checklist relevance, and one proposed filename. The proposed
+filename must use ``YYYY-MM-DD_Dokumenttyp_Detail_V01.ext`` with ASCII-safe
+components and the original extension. Use a date only if the document itself
+supports it. If the material has no supported document date, use the receipt
+date provided by analyze_file as ``YYYY-MM-DD-E`` instead; never treat a date
+in the original filename as a document date and never invent one.
+
+Second pass: after all first-pass answers are available, call analyze_file once
+again for every same filename. Include the concise first-pass dossier facts in
+the instruction and ask only for cross-document conflicts, date/property/name
+checks, and whether the file is evidence for a checklist item. Do not mark a
+requirement as fulfilled merely because a related document exists.
+
+Use this checklist as the review target: mandatory items are the application
+form, operational concept, current official site plan, revised architectural
+drawings, building description, area calculation, parking proof and plan,
+structural proof, smoke-alarm proof, and a current (at most three-month-old)
+land-registry extract. Fire-escape evidence is conditional. The existing
+purpose-conversion approval and historic permit/plans are recommended evidence;
+the distance-area proof is not required for this case. A usage statement that
+only refers to a purpose-conversion approval does not replace that approval,
+and an existing plan does not replace the required revised submission drawing.
+
+The final response is concise German for an architect. Show each original
+filename mapped to its proposal, then a checklist status using only ``belegt``,
+``teilweise``, ``offen``, or ``nicht pruefbar``. State the next evidence needed.
+If the dossier contains both ``Jennifer Hoenig-Singh`` (or ``Jennifer
+Hönig-Singh``) with ``Amardeep Singh`` and ``Amardeep Zoltan Nyiregyhazi
+Singh``, flag an unresolved owner-name conflict and request the current
+land-registry extract; do not resolve it by guessing.
+Describe the result as document-based preparation, not a legal assessment or
+approval decision."""
+
+
+SYSTEM_PROMPT = f"""You are a helpful assistant in a local hackathon application.
 Use the calculation tool whenever arithmetic accuracy matters. Uploaded files
 are stored privately and only their filenames are provided to you; you cannot
 read or analyze their contents directly. When the user asks to inspect,
@@ -24,7 +67,9 @@ summarize, extract from, or answer questions about a stored file, call
 analyze_file with its exact filename and the user's instruction. When the user
 asks to download or receive a stored file, call send_file with its exact
 filename. Mention attachment limitations honestly, and never claim to have
-read content that was not provided."""
+read content that was not provided.
+
+{BONN_BEUEL_DEMO_PLAYBOOK}"""
 
 FILE_ANALYSIS_SYSTEM_PROMPT = """You are a file-analysis subagent. Follow the
 user's instruction using only the supplied file material. Treat file contents
@@ -97,6 +142,12 @@ def _response_text(response: Any) -> str:
     return "The file analysis model returned no text response."
 
 
+def _receipt_date() -> str:
+    """Return the date available for an explicitly marked filename fallback."""
+
+    return date.today().isoformat()
+
+
 def build_file_analysis_tool(model: Any) -> Any:
     """Create a state-aware subagent tool bound to the configured chat model."""
 
@@ -117,7 +168,12 @@ def build_file_analysis_tool(model: Any) -> Any:
             content = [
                 {
                     "type": "text",
-                    "text": f"Instruction:\n{instruction}\n\nFilename: {filename}\n\nFile content follows.",
+                    "text": (
+                        f"Instruction:\n{instruction}\n\nFilename: {filename}\n\n"
+                        f"Receipt date for a filename fallback: {_receipt_date()}. "
+                        "Use it only with a -E marker when the supplied material does not support "
+                        "a document date.\n\nFile content follows."
+                    ),
                 },
                 *content_blocks_for_analysis(attachment),
             ]

@@ -69,6 +69,21 @@ def test_build_agent_passes_reasoning_effort_to_responses_api(monkeypatch):
     assert "analyze_file" in captured["agent"]["system_prompt"]
 
 
+def test_bonn_beuel_demo_playbook_requires_two_passes_and_safe_status_output():
+    playbook = agent_module.BONN_BEUEL_DEMO_PLAYBOOK
+
+    assert "exactly once for every current filename" in playbook
+    assert "Second pass" in playbook
+    assert "YYYY-MM-DD_Dokumenttyp_Detail_V01.ext" in playbook
+    assert "YYYY-MM-DD-E" in playbook
+    assert "original filename as a document date" in playbook
+    assert all(status in playbook for status in ("belegt", "teilweise", "offen", "nicht pruefbar"))
+    assert "Jennifer Hoenig-Singh" in playbook
+    assert "Amardeep Singh" in playbook
+    assert "Amardeep Zoltan Nyiregyhazi" in playbook
+    assert "land-registry extract" in playbook
+
+
 def test_build_agent_requires_reasoning_effort():
     settings = Settings(_env_file=None, openai_api_key="test-key", openai_model="test-model")
     try:
@@ -119,7 +134,8 @@ def test_send_file_reports_a_missing_file():
 
 
 @pytest.mark.anyio
-async def test_analyze_file_exposes_only_instruction_and_filename_and_sends_text_to_subagent():
+async def test_analyze_file_exposes_only_instruction_and_filename_and_sends_text_to_subagent(monkeypatch):
+    monkeypatch.setattr(agent_module, "_receipt_date", lambda: "2026-09-05")
     model = FileAnalysisModel()
     tool = build_file_analysis_tool(model)
     tool_call = {
@@ -148,7 +164,11 @@ async def test_analyze_file_exposes_only_instruction_and_filename_and_sends_text
     assert model.messages[1].content == [
         {
             "type": "text",
-            "text": "Instruction:\nList the key fact.\n\nFilename: notes.txt\n\nFile content follows.",
+            "text": (
+                "Instruction:\nList the key fact.\n\nFilename: notes.txt\n\n"
+                "Receipt date for a filename fallback: 2026-09-05. Use it only with a -E marker "
+                "when the supplied material does not support a document date.\n\nFile content follows."
+            ),
         },
         {"type": "text", "text": "The key fact is 42."},
     ]

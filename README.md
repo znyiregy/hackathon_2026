@@ -11,6 +11,40 @@ A small local-development application with:
 This is intentionally a prototype. Conversation state is held in memory and is
 lost whenever the backend restarts.
 
+## Architecture
+
+```text
+Dash browser UI
+  └─ POST /chat (text + base64 uploads)
+       └─ FastAPI API
+            └─ ChatService
+                 └─ LangGraph agent + in-memory checkpoint
+                      ├─ OpenAI chat model
+                      ├─ calculation tool
+                      ├─ send_file tool
+                      └─ analyze_file subagent tool
+```
+
+The frontend encodes browser uploads as base64 JSON. The backend validates each
+file and stores its original name, MIME type, and base64 content in LangGraph
+state for that chat thread. Only filenames are added to the parent agent's
+prompt; file content remains outside its normal conversation context.
+
+When the agent uses a tool, its tool message is included in the API response.
+The Dash frontend renders tool status messages and turns file artifacts into
+download links.
+
+## What the agent can do
+
+- Answer normal chat questions while retaining conversation context per thread.
+- Calculate arithmetic expressions with the safe `calculation` tool.
+- List and return a previously uploaded file through `send_file`; the user sees
+  it as a download link.
+- Analyze a selected stored TXT, MD, CSV, JSON, PNG, JPEG, or PDF file through
+  `analyze_file`. That subagent receives the user instruction and only the
+  selected file's material; text is capped at 200,000 characters, while images
+  and PDF pages are converted to JPEG with a maximum side of 1400 pixels.
+
 ## Setup
 
 ```bash

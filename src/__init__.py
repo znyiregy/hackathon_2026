@@ -1,0 +1,1 @@
+"""Hackathon chat application."""

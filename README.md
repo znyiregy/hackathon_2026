@@ -16,11 +16,21 @@ Das Modell liest Dokumente und formuliert Befunde. Deterministischer Code
 vergleicht Werte, wertet Regeln aus und entscheidet über Schweregrade. Diese
 Trennung macht das Produkt vertrauenswürdig genug für haftungsrelevante Arbeit.
 
+## Zwei Oberflächen
+
+| Oberfläche | Ort | Stand |
+|---|---|---|
+| **Next.js** | `web/` | Die Oberfläche für die Vorführung |
+| Dash | `src/frontend/` | Älterer Chat-Prototyp, läuft weiter |
+
+Beide sprechen mit demselben Motor. Die Next.js-Oberfläche stellt den
+Assistenten in den Vordergrund und zeigt daneben die Akte, die sich mitfüllt.
+
 ## Aufbau
 
 ```text
 web/            Next.js-Oberfläche (Deutsch, mobil-tauglich)
-  app/          Seiten: Vorgangsübersicht, Vorgang, externer Upload, Regelwerk
+  app/          Seiten: Projekte, Projekt, externer Upload, Regelwerk
   components/   Assistent (Hauptfläche) und Akte (Reiter)
   e2e/          Playwright-Tests für den kritischen Pfad
 src/backend/
@@ -30,7 +40,10 @@ src/backend/
   katalog.py        Kuratiertes Anforderungs- und Faktenmodell (Bonn)
   vorgang_service.py  Aufnahme und Neubewertung
   erzeugung.py      Übertragungsblatt, Entwürfe, Paket, Prüfprotokoll
+  vorschau.py       Quellseite rendern und Fundstelle markieren
   store.py          In-Memory-Ablage (Prototyp: Neustart löscht alles)
+  agent.py          Chat-Agent des Dash-Prototyps
+src/frontend/   Dash-Oberfläche (Chat mit Dossier-Ansicht)
 ```
 
 ## Einrichten
@@ -70,6 +83,7 @@ Dann <http://127.0.0.1:3000> öffnen.
 **Für Vorführungen den Produktions-Build nehmen, nicht `npm run dev`** — im
 Entwicklungsmodus hydriert React in manchen eingebetteten Browsern nicht.
 
+Die alte Dash-Oberfläche startet mit `python -m src.frontend.app` auf Port 8050.
 Die API-Dokumentation liegt unter <http://127.0.0.1:8000/docs>.
 
 ### Von einem Handy aus testen
@@ -80,6 +94,9 @@ Die API-Dokumentation liegt unter <http://127.0.0.1:8000/docs>.
 ```bash
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.228:3000
 ```
+
+Nach jeder Änderung an `NEXT_PUBLIC_BACKEND_URL` neu bauen — der Wert wird beim
+Bauen fest eingesetzt, ein Neustart allein genügt nicht.
 
 ## Tests
 
@@ -96,26 +113,26 @@ Oberfläche — echter Browser, kritischer Pfad, Desktop und Handy:
 cd web && npm run e2e
 ```
 
-Der Browser-Test setzt das Backend auf Netzwerkebene ab (`e2e/backend.ts`), ruft
-also nie OpenAI. Geprüft wird der Weg, den auch die Vorführung nimmt: Vorgang
-anlegen → Unterlagen hochladen → Assistent meldet, was sich geändert hat →
-Widerspruch erscheint → lösen → Paket bleibt gesperrt, solange etwas Kritisches
-offen ist. Dazu die externe Upload-Seite, das Verhalten bei ausgefallenem
-Backend und zwei Mobil-Prüfungen.
+Der Browser-Test setzt das Backend auf Netzwerkebene ab (`web/e2e/backend.ts`),
+ruft also nie OpenAI. Geprüft wird der Weg, den auch die Vorführung nimmt:
+Projekt anlegen → Unterlagen hochladen → Assistent meldet die Änderung →
+Widerspruch erscheint → lösen → Paket bleibt gesperrt, solange Kritisches offen
+ist. Dazu die externe Upload-Seite, das Verhalten bei ausgefallenem Backend und
+zwei Mobil-Prüfungen.
 
 ## Was die Anwendung kann
 
 | Fläche | Inhalt |
 |---|---|
 | **Assistent** | Führt das Gespräch, fragt nach dem nächsten Schritt, erzeugt Upload-Links |
-| **Übersicht** | Kennzahlen, nächster sinnvoller Schritt, Genehmigungskonstellation |
+| **Überblick** | Kennzahlen, nächster sinnvoller Schritt, beteiligte Ämter |
 | **Unterlagen** | Typ, Qualität, Benennungsvorschlag; Unsicheres steht oben |
-| **Projektdaten** | ~35 typisierte Fakten mit Herkunft und Beleg, einzeln bestätigbar |
-| **Widersprüche** | Beide Werte nebeneinander mit Quelle; die Architektin entscheidet |
-| **Anforderungen** | Was das Verfahren verlangt, was belegt ist, was fehlt |
+| **Angaben** | ~35 typisierte Fakten mit Herkunft, einzeln bestätigbar |
+| **Passt nicht** | Beide Werte nebeneinander mit der Seite, auf der sie stehen |
+| **Checkliste** | Was das Verfahren verlangt, was belegt ist, was fehlt |
 | **Prüfung** | Befunde nach Schweregrad, mit Freigabetor |
 | **Antrag** | Betriebsbeschreibung, Anschreiben, Begründungsgerüst — mit Lücken statt Erfindungen |
-| **Paket** | Portal-Übertragungsblatt zum Kopieren, Manifest, Prüfprotokoll |
+| **Fertig machen** | Werte zum Abtippen ins Amtsportal, Dateiliste, Protokoll |
 | **Externer Upload** | Ohne Login, fürs Handy, mit sofortiger Qualitätsrückmeldung |
 
 ### Was das Farbsystem bedeutet
@@ -124,10 +141,25 @@ Die Farben tragen Bedeutung, sie sind keine Gestaltungsentscheidung:
 
 | Farbe | Bedeutung |
 |---|---|
-| Bernstein | KI-Entwurf — noch nicht von einem Menschen bestätigt |
-| Grau | Bestätigter, geprüfter Fakt |
-| Rot | Fehlt, Widerspruch, oder sperrt den Folgeschritt |
+| Bernstein | KI-Vorschlag — noch nicht von einem Menschen bestätigt |
+| Grau | Bestätigte, geprüfte Angabe |
+| Rot | Fehlt, passt nicht zusammen, oder sperrt den Folgeschritt |
 | Grün | Erledigt / bereit |
+
+## REST-Schnittstelle
+
+`GET /health` liefert `{"status": "ok"}`.
+
+Die Vorgangs-Schnittstelle liegt unter `/api/vorgaenge`; die vollständige
+Beschreibung steht unter `/docs`.
+
+Der Dash-Prototyp nutzt daneben `POST /chat`. Unterstützte Uploads sind TXT, MD,
+CSV, JSON, PDF, PNG und JPEG, höchstens 10 MiB je Anfrage und 10 Seiten je PDF.
+Dateiinhalte gelangen nie in den Kontext des Hauptagenten — er sieht nur
+Dateinamen und kann eine Datei über `analyze_file` auswerten lassen. Die Antwort
+eines `submit_result`-Werkzeugs trägt zusätzlich ein strukturiertes `result` für
+die Bonn-Beuel-Dossieransicht mit `file_renaming`, `checklist_status`,
+`next_steps` und `conflicts`; gewöhnliche Nachrichten liefern `result: null`.
 
 ## Grenzen des Prototyps
 

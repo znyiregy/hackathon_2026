@@ -5,7 +5,7 @@ from typing import Any
 from langchain.messages import HumanMessage, ToolMessage
 
 from src.backend.attachments import validate_attachments
-from src.backend.schemas import ChatMessage, ChatRequest, DownloadAttachment
+from src.backend.schemas import ChatMessage, ChatRequest, DossierResult, DownloadAttachment
 
 
 class AgentInvocationError(RuntimeError):
@@ -60,6 +60,20 @@ def _download_attachments(message: ToolMessage) -> list[DownloadAttachment]:
         raise AgentInvocationError("A tool returned an invalid downloadable attachment.") from exc
 
 
+def _dossier_result(message: ToolMessage) -> DossierResult | None:
+    """Read a structured dossier result from a submit_result tool artifact."""
+
+    if getattr(message, "name", None) != "submit_result":
+        return None
+    artifact = getattr(message, "artifact", None)
+    if not isinstance(artifact, dict) or "result" not in artifact:
+        return None
+    try:
+        return DossierResult.model_validate(artifact["result"])
+    except ValueError as exc:
+        raise AgentInvocationError("A tool returned an invalid structured dossier result.") from exc
+
+
 def _tool_messages(messages: list[Any]) -> list[ChatMessage]:
     rendered = []
     for message in messages:
@@ -70,6 +84,7 @@ def _tool_messages(messages: list[Any]) -> list[ChatMessage]:
                     tool_name=getattr(message, "name", None),
                     content=_answer_text(message),
                     attachments=_download_attachments(message),
+                    result=_dossier_result(message),
                 )
             )
     return rendered

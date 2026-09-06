@@ -23,6 +23,7 @@ Dash browser UI
                       ├─ calculation tool
                       ├─ send_file tool
                       └─ analyze_file subagent tool
+                      └─ submit_result dossier tool
 ```
 
 The frontend encodes browser uploads as base64 JSON. The backend validates each
@@ -106,8 +107,10 @@ requested file through `send_file`, or analyze a selected file through its
 
 Responses include the final `answer` and ordered `messages`. Tool messages are
 forwarded to the frontend, so their status text is shown in the transcript. A
-tool can also return a downloadable file in its LangChain `ToolMessage`
-artifact:
+`submit_result` tool message additionally has a structured `result` object for
+the Bonn-Beuel dossier view. It contains `file_renaming`, `checklist_status`,
+`next_steps`, and `conflicts`; ordinary messages return `result: null`. A tool can
+also return a downloadable file in its LangChain `ToolMessage` artifact:
 
 ```python
 (

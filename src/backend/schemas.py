@@ -28,6 +28,48 @@ class DownloadAttachment(BaseModel):
         return value
 
 
+ChecklistState = Literal["belegt", "teilweise", "offen", "nicht pruefbar"]
+
+
+class FileRenaming(BaseModel):
+    """One original filename and its proposed normalized name."""
+
+    old_filename: str = Field(min_length=1, max_length=255)
+    new_filename: str = Field(min_length=1, max_length=255)
+
+
+class ChecklistStatus(BaseModel):
+    """The evidence state for one dossier requirement."""
+
+    item: str = Field(min_length=1)
+    status: ChecklistState
+    reason: str = Field(min_length=1)
+
+
+class NextStep(BaseModel):
+    """A requested piece of evidence and why it is needed."""
+
+    evidence: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+
+
+class Conflict(BaseModel):
+    """A dossier inconsistency that needs an explicit follow-up."""
+
+    title: str = Field(min_length=1)
+    detail: str = Field(min_length=1)
+    requested_action: str = Field(min_length=1)
+
+
+class DossierResult(BaseModel):
+    """Structured outcome of the Bonn-Beuel dossier review."""
+
+    file_renaming: list[FileRenaming]
+    checklist_status: list[ChecklistStatus]
+    next_steps: list[NextStep]
+    conflicts: list[Conflict]
+
+
 class ChatMessage(BaseModel):
     """A message the frontend can render from an agent invocation."""
 
@@ -35,6 +77,7 @@ class ChatMessage(BaseModel):
     content: str = ""
     tool_name: str | None = None
     attachments: list[DownloadAttachment] = Field(default_factory=list)
+    result: DossierResult | None = None
 
 
 class ChatRequest(BaseModel):

@@ -9,13 +9,21 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from PIL import Image
 
-from src.backend.agent import ConfigurationError, _merge_attachments, build_agent, build_file_analysis_tool, send_file
+from src.backend.agent import (
+    ConfigurationError,
+    _merge_attachments,
+    build_agent,
+    build_file_analysis_tool,
+    send_file,
+    submit_result,
+)
 from src.backend.config import Settings
+from src.backend.schemas import DossierResult
 
 
 def invoke_send_file(state):
     graph = StateGraph(dict)
-    graph.add_node("tools", ToolNode([send_file]))
+    graph.add_node("tools", ToolNode([send_file, submit_result]))
     graph.add_edge(START, "tools")
     graph.add_edge("tools", END)
     return graph.compile().invoke(state)
@@ -64,9 +72,15 @@ def test_build_agent_passes_reasoning_effort_to_responses_api(monkeypatch):
         "use_responses_api": True,
         "reasoning": {"effort": "medium"},
     }
-    assert [tool.name for tool in captured["agent"]["tools"]] == ["calculation", "send_file", "analyze_file"]
+    assert [tool.name for tool in captured["agent"]["tools"]] == [
+        "calculation",
+        "send_file",
+        "analyze_file",
+        "submit_result",
+    ]
     assert captured["agent"]["state_schema"] is agent_module.ChatAgentState
     assert "analyze_file" in captured["agent"]["system_prompt"]
+    assert "submit_result" in captured["agent"]["system_prompt"]
 
 
 def test_bonn_beuel_demo_playbook_requires_two_passes_and_safe_status_output():
@@ -131,6 +145,56 @@ def test_send_file_reports_a_missing_file():
 
     assert result["messages"][0].content == "No stored file named 'missing.txt' is available."
     assert result["messages"][0].artifact == {"attachments": []}
+
+
+def test_submit_result_validates_and_emits_structured_artifact():
+    tool_call = {
+        "name": "submit_result",
+        "args": {
+            "file_renaming": [{"old_filename": "old.pdf", "new_filename": "2026-01-01_report_V01.pdf"}],
+            "checklist_status": [{"item": "Application form", "status": "offen", "reason": "Not supplied."}],
+            "next_steps": [{"evidence": "Application form", "reason": "Required for submission."}],
+            "conflicts": [
+                {
+                    "title": "Owner name conflict",
+                    "detail": "The named owners differ between documents.",
+                    "requested_action": "Request the current land-registry extract.",
+                }
+            ],
+        },
+        "id": "call-1",
+        "type": "tool_call",
+    }
+    result = invoke_send_file({"messages": [AIMessage(content="", tool_calls=[tool_call])]})
+    message = result["messages"][0]
+
+    assert set(submit_result.tool_call_schema.model_json_schema()["properties"]) == {
+        "file_renaming",
+        "checklist_status",
+        "next_steps",
+        "conflicts",
+    }
+    assert DossierResult.model_json_schema()["$defs"]["ChecklistStatus"]["properties"]["status"]["enum"] == [
+        "belegt",
+        "teilweise",
+        "offen",
+        "nicht pruefbar",
+    ]
+    assert message.content == "Structured dossier result submitted."
+    assert message.artifact == {
+        "result": {
+            "file_renaming": [{"old_filename": "old.pdf", "new_filename": "2026-01-01_report_V01.pdf"}],
+            "checklist_status": [{"item": "Application form", "status": "offen", "reason": "Not supplied."}],
+            "next_steps": [{"evidence": "Application form", "reason": "Required for submission."}],
+            "conflicts": [
+                {
+                    "title": "Owner name conflict",
+                    "detail": "The named owners differ between documents.",
+                    "requested_action": "Request the current land-registry extract.",
+                }
+            ],
+        }
+    }
 
 
 @pytest.mark.anyio

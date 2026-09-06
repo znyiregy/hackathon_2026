@@ -58,6 +58,76 @@ def show_uploads(filenames: list[str] | str | None):
     return [html.Span(name, className="file-chip") for name in names]
 
 
+def _result_table(headers: list[str], rows: list[list[object]], class_name: str) -> html.Table:
+    return html.Table(
+        [
+            html.Thead(html.Tr([html.Th(header) for header in headers])),
+            html.Tbody([html.Tr([html.Td(value) for value in row]) for row in rows]),
+        ],
+        className=class_name,
+    )
+
+
+def render_dossier_result(result: dict[str, object]):
+    """Render the validated structured dossier result returned by the backend."""
+
+    file_renaming = result.get("file_renaming", [])
+    checklist_status = result.get("checklist_status", [])
+    conflicts = result.get("conflicts", [])
+    next_steps = result.get("next_steps", [])
+
+    renaming_rows = [
+        [entry.get("old_filename", ""), entry.get("new_filename", "")]
+        for entry in file_renaming
+        if isinstance(entry, dict)
+    ] if isinstance(file_renaming, list) else []
+    checklist_rows = []
+    if isinstance(checklist_status, list):
+        for entry in checklist_status:
+            if not isinstance(entry, dict):
+                continue
+            status = str(entry.get("status", ""))
+            checklist_rows.append(
+                [
+                    entry.get("item", ""),
+                    html.Span(status, className=f"status-chip status-{status.replace(' ', '-')}"),
+                    entry.get("reason", ""),
+                ]
+            )
+    conflict_cards = [
+        html.Article(
+            [
+                html.H4(entry.get("title", "")),
+                html.P(entry.get("detail", "")),
+                html.P([html.Strong("Nächste Aktion: "), entry.get("requested_action", "")]),
+            ],
+            className="conflict-card",
+        )
+        for entry in conflicts
+        if isinstance(entry, dict)
+    ] if isinstance(conflicts, list) else []
+    next_step_items = [
+        html.Li([html.Strong(entry.get("evidence", "")), html.Span(f": {entry.get('reason', '')}")])
+        for entry in next_steps
+        if isinstance(entry, dict)
+    ] if isinstance(next_steps, list) else []
+
+    return html.Section(
+        [
+            html.H3("Strukturierte Dossierprüfung"),
+            html.H4("Dateibenennung"),
+            _result_table(["Bisheriger Dateiname", "Vorgeschlagener Dateiname"], renaming_rows, "result-table"),
+            html.H4("Checklistenstatus"),
+            _result_table(["Prüfpunkt", "Status", "Begründung"], checklist_rows, "result-table"),
+            html.H4("Konflikte und Klärungen"),
+            html.Div(conflict_cards or [html.P("Keine Konflikte festgestellt.")], className="conflict-list"),
+            html.H4("Nächste benötigte Nachweise"),
+            html.Ul(next_step_items or [html.Li("Keine weiteren Nachweise benannt.")], className="next-steps-list"),
+        ],
+        className="dossier-result",
+    )
+
+
 @app.callback(Output("transcript", "children"), Input("transcript-store", "data"))
 def render_transcript(transcript: list[dict[str, object]]):
     if not transcript:
@@ -65,6 +135,15 @@ def render_transcript(transcript: list[dict[str, object]]):
     rendered = []
     for item in transcript:
         role = str(item.get("role", "assistant"))
+        result = item.get("result")
+        if item.get("tool_name") == "submit_result" and isinstance(result, dict):
+            rendered.append(
+                html.Div(
+                    className="message message-tool dossier-result-message",
+                    children=render_dossier_result(result),
+                )
+            )
+            continue
         files = item.get("files", [])
         attachments = item.get("attachments", [])
         downloads = []

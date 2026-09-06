@@ -14,7 +14,7 @@ from langgraph.prebuilt import InjectedState
 from src.backend.attachments import AttachmentError, content_blocks_for_analysis
 from src.backend.calculator import CalculationError, calculate_expression
 from src.backend.config import Settings
-from src.backend.schemas import Attachment
+from src.backend.schemas import Attachment, DossierResult
 
 
 BONN_BEUEL_DEMO_PLAYBOOK = """Bonn-Beuel intake playbook:
@@ -48,9 +48,15 @@ the distance-area proof is not required for this case. A usage statement that
 only refers to a purpose-conversion approval does not replace that approval,
 and an existing plan does not replace the required revised submission drawing.
 
-The final response is concise German for an architect. Show each original
-filename mapped to its proposal, then a checklist status using only ``belegt``,
-``teilweise``, ``offen``, or ``nicht pruefbar``. State the next evidence needed.
+After both passes, call ``submit_result`` exactly once with every finding. Its
+``file_renaming``, ``checklist_status``, ``next_steps``, and ``conflicts`` keys
+must always be present, even when a category has no entries. Use only
+``belegt``, ``teilweise``, ``offen``, or ``nicht pruefbar`` for checklist
+statuses. Put each unresolved inconsistency in ``conflicts`` with a title,
+detail, and requested action. The final response is only a concise German
+confirmation that the structured dossier review is available; do not repeat
+the submitted data in prose.
+
 If the dossier contains both ``Jennifer Hoenig-Singh`` (or ``Jennifer
 Hönig-Singh``) with ``Amardeep Singh`` and ``Amardeep Zoltan Nyiregyhazi
 Singh``, flag an unresolved owner-name conflict and request the current
@@ -122,6 +128,24 @@ def send_file(
     if not isinstance(attachment, dict):
         return f"No stored file named {filename!r} is available.", {"attachments": []}
     return f"Sending {filename!r} to the user.", {"attachments": [attachment]}
+
+
+@tool(args_schema=DossierResult, response_format="content_and_artifact")
+def submit_result(
+    file_renaming: list[Any],
+    checklist_status: list[Any],
+    next_steps: list[Any],
+    conflicts: list[Any],
+) -> tuple[str, dict[str, dict[str, Any]]]:
+    """Submit the final structured result of a Bonn-Beuel dossier review."""
+
+    result = DossierResult(
+        file_renaming=file_renaming,
+        checklist_status=checklist_status,
+        next_steps=next_steps,
+        conflicts=conflicts,
+    )
+    return "Structured dossier result submitted.", {"result": result.model_dump(mode="json")}
 
 
 def _response_text(response: Any) -> str:
@@ -205,7 +229,7 @@ def build_agent(settings: Settings) -> Any:
     file_analysis_tool = build_file_analysis_tool(model)
     return create_agent(
         model=model,
-        tools=[calculation, send_file, file_analysis_tool],
+        tools=[calculation, send_file, file_analysis_tool, submit_result],
         system_prompt=SYSTEM_PROMPT,
         state_schema=ChatAgentState,
         checkpointer=InMemorySaver(),

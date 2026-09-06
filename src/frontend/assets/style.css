@@ -44,6 +44,24 @@ button, textarea { font: inherit; }
 .message-downloads { margin-top: 8px; }
 .download-link { color: #175cd3; font-size: .88rem; }
 
+.dossier-result-message { max-width: 100%; padding: 0; background: transparent; }
+.dossier-result { padding: 18px; border: 1px solid #cfd9ea; border-radius: 12px; background: #f8faff; }
+.dossier-result h3 { margin: 0 0 18px; font-size: 1.05rem; }
+.dossier-result h4 { margin: 18px 0 8px; font-size: .9rem; color: #35415a; }
+.result-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.result-table th, .result-table td { padding: 9px; border: 1px solid #dce3ef; text-align: left; vertical-align: top; }
+.result-table th { background: #eaf0fa; color: #35415a; }
+.status-chip { display: inline-block; padding: 3px 7px; border-radius: 999px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.status-belegt { color: #0d6b3e; background: #dff6e8; }
+.status-teilweise { color: #875500; background: #fff1c9; }
+.status-offen { color: #a02b1a; background: #ffe2dc; }
+.status-nicht-pruefbar { color: #465168; background: #e5e9f0; }
+.conflict-list { display: grid; gap: 8px; }
+.conflict-card { padding: 11px; border-left: 4px solid #d45f3d; border-radius: 7px; background: #fff0eb; }
+.conflict-card h4, .conflict-card p { margin: 0 0 6px; }
+.conflict-card p:last-child { margin-bottom: 0; }
+.next-steps-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
 .composer { padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .upload-box {
     grid-column: 1 / -1;
@@ -68,4 +86,6 @@ button, textarea { font: inherit; }
     .message { max-width: 92%; }
     .composer { grid-template-columns: 1fr; }
     .primary-button { min-height: 44px; }
+    .dossier-result { padding: 12px; overflow-x: auto; }
+    .result-table { min-width: 560px; }
 }

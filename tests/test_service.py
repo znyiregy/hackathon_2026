@@ -101,6 +101,43 @@ async def test_service_forwards_tool_messages_and_downloadable_attachments():
             "attachments": [
                 {"name": "report.txt", "mime_type": "text/plain", "content_base64": "SGVsbG8="}
             ],
+            "result": None,
         },
-        {"role": "assistant", "content": "I created the report.", "tool_name": None, "attachments": []},
+        {"role": "assistant", "content": "I created the report.", "tool_name": None, "attachments": [], "result": None},
     ]
+
+
+class StructuredResultAgent:
+    async def ainvoke(self, payload, config):
+        return {
+            "messages": [
+                *payload["messages"],
+                ToolMessage(
+                    content="Structured dossier result submitted.",
+                    name="submit_result",
+                    tool_call_id="call-1",
+                    artifact={
+                        "result": {
+                            "file_renaming": [{"old_filename": "old.pdf", "new_filename": "new.pdf"}],
+                            "checklist_status": [{"item": "Application form", "status": "offen", "reason": "Missing."}],
+                            "next_steps": [{"evidence": "Application form", "reason": "Required."}],
+                            "conflicts": [],
+                        }
+                    },
+                ),
+                AIMessage(content="Die strukturierte Dossierprüfung ist verfügbar."),
+            ]
+        }
+
+
+@pytest.mark.anyio
+async def test_service_forwards_structured_dossier_result():
+    result = await ChatService(StructuredResultAgent()).chat(ChatRequest(thread_id=uuid4(), message="review"))
+
+    assert result.messages[0].tool_name == "submit_result"
+    assert result.messages[0].result.model_dump() == {
+        "file_renaming": [{"old_filename": "old.pdf", "new_filename": "new.pdf"}],
+        "checklist_status": [{"item": "Application form", "status": "offen", "reason": "Missing."}],
+        "next_steps": [{"evidence": "Application form", "reason": "Required."}],
+        "conflicts": [],
+    }

@@ -58,7 +58,9 @@ async def test_chat_contract_and_attachment_only_message():
     assert response.json() == {
         "thread_id": thread_id,
         "answer": "fake answer",
-        "messages": [{"role": "assistant", "content": "fake answer", "tool_name": None, "attachments": []}],
+        "messages": [
+            {"role": "assistant", "content": "fake answer", "tool_name": None, "attachments": [], "result": None}
+        ],
     }
     assert fake.requests[0].files[0].name == "a.txt"
 
@@ -95,6 +97,48 @@ async def test_chat_returns_tool_messages_and_download_attachments():
         "tool_name": "build_report",
         "content": "Generated report.",
         "attachments": [{"name": "report.txt", "mime_type": "text/plain", "content_base64": "SGVsbG8="}],
+        "result": None,
+    }
+
+
+@pytest.mark.anyio
+async def test_chat_returns_structured_dossier_result():
+    fake = FakeService()
+
+    async def chat_with_structured_result(request):
+        fake.requests.append(request)
+        return ChatResult(
+            answer="Die strukturierte Dossierprüfung ist verfügbar.",
+            messages=[
+                ChatMessage(
+                    role="tool",
+                    tool_name="submit_result",
+                    content="Structured dossier result submitted.",
+                    result={
+                        "file_renaming": [],
+                        "checklist_status": [{"item": "Antragsformular", "status": "offen", "reason": "Fehlt."}],
+                        "next_steps": [{"evidence": "Antragsformular", "reason": "Erforderlich."}],
+                        "conflicts": [],
+                    },
+                ),
+                ChatMessage(role="assistant", content="Die strukturierte Dossierprüfung ist verfügbar."),
+            ],
+        )
+
+    fake.chat = chat_with_structured_result
+    app.dependency_overrides[get_chat_service] = override_with(fake)
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/chat", json={"thread_id": str(uuid4()), "message": "review"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["messages"][0]["result"] == {
+        "file_renaming": [],
+        "checklist_status": [{"item": "Antragsformular", "status": "offen", "reason": "Fehlt."}],
+        "next_steps": [{"evidence": "Antragsformular", "reason": "Erforderlich."}],
+        "conflicts": [],
     }
 
 

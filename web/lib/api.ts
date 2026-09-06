@@ -1,8 +1,17 @@
 // Typed client for the Digital Deutschland backend.
 // Every call goes through `anfrage` so error handling stays in one place.
 
+const STANDARD_BACKEND = "http://127.0.0.1:8000";
+
+/** Where the engine lives.
+ *
+ * Deliberately not `??`: that only falls back on null/undefined, so an empty
+ * `NEXT_PUBLIC_BACKEND_URL=` in a .env file left the value as "" and every
+ * call went to the frontend's own origin, where Next.js answered 404. The
+ * trailing slash is stripped so the URL never doubles up. */
 export const BACKEND =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_BACKEND_URL?.trim().replace(/\/+$/, "") ||
+  STANDARD_BACKEND;
 
 export class BackendFehler extends Error {
   /** HTTP status, when the request reached the backend at all. */
@@ -66,11 +75,24 @@ export async function anfrage<T>(
 
   if (!antwort.ok) {
     let detail = `Der Motor hat mit ${antwort.status} geantwortet.`;
+    let vomMotor = false;
     try {
       const koerper = await antwort.json();
-      if (typeof koerper?.detail === "string") detail = koerper.detail;
+      if (typeof koerper?.detail === "string") {
+        detail = koerper.detail;
+        vomMotor = true;
+      }
     } catch {
-      // Keep the status-based message.
+      // Keine JSON-Antwort — dann kam sie nicht von unserem Motor.
+    }
+    if (antwort.status === 404 && !vomMotor) {
+      // Der Motor beantwortet jeden Fehler mit einer JSON-Meldung. Ein 404
+      // ohne solche Meldung stammt vom Frontend-Server selbst — die Anfrage
+      // ist nie beim Motor angekommen.
+      detail =
+        `Die Anfrage ist nicht beim Motor angekommen, sondern beim Frontend ` +
+        `(${BACKEND || "leere Adresse"}). Läuft der Motor auf Port 8000, und ` +
+        `ist NEXT_PUBLIC_BACKEND_URL richtig gesetzt?`;
     }
     throw new BackendFehler(detail, antwort.status);
   }

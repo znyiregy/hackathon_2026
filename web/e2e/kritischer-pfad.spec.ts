@@ -347,3 +347,29 @@ test.describe("Quellvorschau", () => {
     ).toHaveCount(1);
   });
 });
+
+test.describe("Wenn die Anfrage den Motor nicht erreicht", () => {
+  test("sagt die Meldung, dass das Frontend geantwortet hat", async ({ page }) => {
+    // Genau das passiert, wenn NEXT_PUBLIC_BACKEND_URL leer ist: die Anfrage
+    // landet auf dem Frontend-Server, der den Pfad nicht kennt und mit einer
+    // HTML-Seite und 404 antwortet. Die alte Meldung ("Der Motor hat mit 404
+    // geantwortet") schickte einen Kollegen auf die falsche Fährte.
+    await page.route("http://127.0.0.1:8000/api/**", (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "text/html",
+        body: "<html><body>404 - This page could not be found.</body></html>",
+      }),
+    );
+
+    await page.goto("/");
+
+    await expect(
+      page.getByText(/nicht beim Motor angekommen, sondern beim Frontend/),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/NEXT_PUBLIC_BACKEND_URL/)).toBeVisible();
+
+    // Die alte, irreführende Formulierung darf nicht mehr auftauchen.
+    await expect(page.getByText("Der Motor hat mit 404 geantwortet.")).toHaveCount(0);
+  });
+});

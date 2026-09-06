@@ -35,7 +35,7 @@ export function Antragsvorbereitung({
       setInfos((await erzeugung.artefakte(vorgangId)).artefakte);
       setFehler(null);
     } catch (ausnahme) {
-      setFehler(fehlertext(ausnahme, "Die Artefaktliste konnte nicht geladen werden."));
+      setFehler(fehlertext(ausnahme, "Die Liste konnte ich nicht laden."));
     }
   }, [vorgangId]);
 
@@ -53,7 +53,7 @@ export function Antragsvorbereitung({
       const artefakt = await erzeugung.erzeugen(vorgangId, schluessel);
       setEntwuerfe((bisher) => ({ ...bisher, [schluessel]: artefakt }));
     } catch (ausnahme) {
-      setFehler(fehlertext(ausnahme, "Der Entwurf konnte nicht erzeugt werden."));
+      setFehler(fehlertext(ausnahme, "Den Text konnte ich nicht schreiben."));
     } finally {
       setLaeuft(null);
     }
@@ -65,7 +65,7 @@ export function Antragsvorbereitung({
   if (!infos) {
     return (
       <p style={{ color: "var(--tinte-leise)", fontSize: "0.9rem" }}>
-        Wird geladen…
+        Einen Moment…
       </p>
     );
   }
@@ -73,8 +73,8 @@ export function Antragsvorbereitung({
   return (
     <div className={stil.raster}>
       <div className="alarm alarm-entwurf">
-        Alles Faktische wird aus bestätigten Projektdaten eingesetzt, nicht vom
-        Modell erfunden. Lücken erscheinen als Platzhalter in eckigen Klammern.
+        Zahlen und Namen kommen aus Ihren bestätigten Angaben. Was noch fehlt,
+        steht in eckigen Klammern.
       </div>
 
       {fehler && <div className="alarm alarm-kritisch">{fehler}</div>}
@@ -96,10 +96,10 @@ export function Antragsvorbereitung({
                 onClick={() => void erzeugen(info.schluessel)}
               >
                 {laeuft === info.schluessel
-                  ? "Wird geschrieben…"
+                  ? "Schreibt…"
                   : entwurf
-                    ? "Neu erzeugen"
-                    : "Entwurf erzeugen"}
+                    ? "Neu schreiben"
+                    : "Text schreiben"}
               </button>
             </div>
 
@@ -107,7 +107,7 @@ export function Antragsvorbereitung({
 
             {!info.bereit && (
               <div className={stil.gesperrt}>
-                <span className="chip chip-kritisch">Voraussetzung fehlt</span>{" "}
+                <span className="chip chip-kritisch">geht noch nicht</span>{" "}
                 Bestätigen Sie zuerst:{" "}
                 {info.fehlende_voraussetzungen.join(", ")}.
               </div>
@@ -118,7 +118,7 @@ export function Antragsvorbereitung({
                 <div className={stil.entwurf}>{entwurf.entwurf}</div>
                 {entwurf.luecken.length > 0 && (
                   <div className={stil.luecken}>
-                    <span className="label">Noch zu füllen:</span>
+                    <span className="label">Bitte noch ergänzen:</span>
                     {entwurf.luecken.map((luecke) => (
                       <span key={luecke} className="chip chip-kritisch">
                         {luecke}
@@ -171,7 +171,7 @@ export function Paketansicht({
       setPaket(p);
       setFehler(null);
     } catch (ausnahme) {
-      setFehler(fehlertext(ausnahme, "Das Paket konnte nicht geladen werden."));
+      setFehler(fehlertext(ausnahme, "Das konnte ich nicht laden."));
     }
   }, [vorgangId]);
 
@@ -196,7 +196,7 @@ export function Paketansicht({
   if (!blatt || !paket) {
     return (
       <p style={{ color: "var(--tinte-leise)", fontSize: "0.9rem" }}>
-        Wird geladen…
+        Einen Moment…
       </p>
     );
   }
@@ -204,10 +204,10 @@ export function Paketansicht({
   return (
     <div className={stil.raster}>
       <div className="alarm alarm-entwurf">
-        <strong>Die Einreichung erfolgt durch Sie im Bauportal.NRW.</strong>{" "}
+        <strong>Abschicken müssen Sie selbst.</strong>{" "}
         {blatt.hinweis}{" "}
         <a href={blatt.portal_url} target="_blank" rel="noopener noreferrer">
-          Bauportal.NRW öffnen
+          Zum Amtsportal
         </a>
       </div>
 
@@ -215,11 +215,11 @@ export function Paketansicht({
 
       <div>
         <div className={stil.blattKopf}>
-          <span className="label">Portal-Übertragungsblatt</span>
+          <span className="label">Diese Werte tippen Sie ins Amtsportal</span>
           <span className="label">
             {blatt.vollstaendig
-              ? "alle Felder bestätigt"
-              : "noch nicht vollständig bestätigt"}
+              ? "alles bestätigt"
+              : "noch nicht alles bestätigt"}
           </span>
         </div>
 
@@ -257,20 +257,19 @@ export function Paketansicht({
       </div>
 
       <div>
-        <span className="label">Paketinhalt</span>
+        <span className="label">Das ist drin</span>
         <div className={stil.manifest} style={{ marginTop: "0.35rem" }}>
           {paket.manifest.length === 0 && (
             <p style={{ color: "var(--tinte-leise)", fontSize: "0.9rem" }}>
-              Noch keine Unterlagen im Paket.
+              Noch nichts drin.
             </p>
           )}
           {paket.manifest.map((eintrag) => (
             <div key={eintrag.dateiname} className={stil.zeile}>
               <div className={stil.dateiname}>{eintrag.dateiname}</div>
               <div className={stil.meta}>
-                ursprünglich {eintrag.urspruenglich} · {eintrag.typ} ·{" "}
-                {Math.round(eintrag.groesse_bytes / 1024)} KB · sha256:
-                {eintrag.pruefsumme}
+                früher: {eintrag.urspruenglich} · {eintrag.typ} ·{" "}
+                {Math.round(eintrag.groesse_bytes / 1024)} KB
               </div>
             </div>
           ))}
@@ -282,14 +281,14 @@ export function Paketansicht({
       >
         <strong>
           {paket.eingefroren_am
-            ? "Paket ist eingefroren."
+            ? "Alles festgeschrieben."
             : paket.freigabe_moeglich
-              ? "Das Paket kann eingefroren werden."
-              : `Freigabe gesperrt — ${paket.offene_kritische} kritische Befunde offen.`}
+              ? "Sie können alles festschreiben."
+              : `Noch nicht — ${paket.offene_kritische} Punkt(e) müssen geklärt werden.`}
         </strong>
         {paket.paket_hash && (
           <div className={stil.meta} style={{ marginTop: "0.3rem" }}>
-            Prüfsumme: {paket.paket_hash}
+            Kennzeichen: {paket.paket_hash.slice(0, 16)}…
           </div>
         )}
         <div className={stil.knopfreihe}>
@@ -301,12 +300,12 @@ export function Paketansicht({
                 setProtokoll(datei.text);
               } catch (ausnahme) {
                 setFehler(
-                  fehlertext(ausnahme, "Das Prüfprotokoll konnte nicht geladen werden."),
+                  fehlertext(ausnahme, "Das Protokoll konnte ich nicht laden."),
                 );
               }
             }}
           >
-            Prüfprotokoll anzeigen
+            Protokoll anzeigen
           </button>
           <button
             className={`knopf-sekundaer ${stil.klein}`}

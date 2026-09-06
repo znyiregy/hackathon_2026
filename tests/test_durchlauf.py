@@ -177,7 +177,8 @@ def test_vollstaendiger_durchlauf(klient):
     # 4. Der Widerspruch blockiert den nächsten Schritt.
     detail = klient.get(f"/api/vorgaenge/{vid}").json()
     assert detail["kennzahlen"]["konflikte_kritisch"] == 1
-    assert "Widersprüche" in detail["naechster_schritt"]
+    # Der nächste Schritt benennt den Widerspruch, statt vom Hochladen zu reden.
+    assert "Flurstück" in detail["naechster_schritt"]
 
     # 5. Solange etwas Kritisches offen ist, lässt sich nichts einfrieren.
     pruefung = klient.get(f"/api/vorgaenge/{vid}/pruefung").json()
@@ -210,7 +211,7 @@ def test_vollstaendiger_durchlauf(klient):
 
     # 8. Die Prüfung nennt die Zweckentfremdung weiterhin als kritischen Befund.
     befunde = klient.get(f"/api/vorgaenge/{vid}/pruefung").json()["befunde"]
-    assert any("90 Tage" in befund["beobachtung"] for befund in befunde)
+    assert any("Soziales und Wohnen" in befund["massnahme"] for befund in befunde)
 
     # 9. Alles ist protokolliert.
     protokoll = klient.get(f"/api/vorgaenge/{vid}/protokoll").json()["eintraege"]

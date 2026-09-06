@@ -10,7 +10,9 @@ import { backendAus, backendStellen, VORGANG_ID } from "./backend";
  * squeezed. The same walk therefore needs one extra tap on a phone.
  */
 async function reiterOeffnen(page: import("@playwright/test").Page, name: string | RegExp) {
-  const umschalter = page.getByRole("tab", { name: "Akte" });
+  // Kein exact: der Umschalter trägt eine Zahl, sobald etwas offen ist —
+  // dann heißt er "Zum Projekt 1" und eine exakte Suche ginge ins Leere.
+  const umschalter = page.getByRole("tab", { name: /^Zum Projekt/ });
   if (await umschalter.isVisible()) {
     await umschalter.click();
   }
@@ -34,24 +36,24 @@ test.describe("Kritischer Pfad", () => {
     // -- 1. Leere Übersicht ------------------------------------------------
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Vorgangsübersicht" }),
+      page.getByRole("heading", { name: "Meine Projekte" }),
     ).toBeVisible();
-    await expect(page.getByText("Noch kein Vorgang")).toBeVisible();
+    await expect(page.getByText("Noch kein Projekt")).toBeVisible();
 
     // -- 2. Vorgang anlegen ------------------------------------------------
-    await page.getByRole("button", { name: "Vorgang anlegen" }).click();
+    await page.getByRole("button", { name: "Projekt anlegen" }).first().click();
     await page
-      .getByRole("textbox", { name: "Straße und Hausnummer" })
+      .getByRole("textbox", { name: "Adresse" })
       .fill("Am Weiher 7");
 
     // Die Zweckentfremdungs-Warnung erscheint bei über 90 Tagen sofort —
     // das ist der Punkt, den sonst keine Behörde prüft.
     await expect(
-      page.getByText(/Zweckentfremdungsgenehmigung beim Amt für Soziales/),
+      page.getByText(/zusätzlich eine Erlaubnis von einem zweiten Amt/),
     ).toBeVisible();
 
     await page
-      .getByRole("button", { name: "Vorgang anlegen", exact: true })
+      .getByRole("button", { name: "Projekt anlegen", exact: true })
       .last()
       .click();
 
@@ -60,21 +62,21 @@ test.describe("Kritischer Pfad", () => {
     await expect(
       page.getByRole("heading", { name: "Am Weiher 7, 53229 Bonn" }),
     ).toBeVisible();
-    await expect(page.getByText(/Guten Tag\. Ich bereite mit Ihnen/)).toBeVisible();
+    await expect(page.getByText(/Guten Tag\. Ziehen Sie Ihre Unterlagen/)).toBeVisible();
 
     // Der kritische Parallelstrang steht sichtbar in der Akte.
-    await reiterOeffnen(page, "Übersicht");
+    await reiterOeffnen(page, "Überblick");
     await expect(page.getByText("Zweckentfremdung").first()).toBeVisible();
     await expect(page.getByText("kritisch").first()).toBeVisible();
 
     // -- 4. Assistent antwortet und zeigt seine Werkzeuge ------------------
     const assistentUmschalter = page.getByRole("tab", { name: "Assistent" });
     if (await assistentUmschalter.isVisible()) await assistentUmschalter.click();
-    await page.getByRole("button", { name: "Welche Unterlagen fehlen noch?" }).click();
+    await page.getByRole("button", { name: "Was fehlt noch?" }).click();
     await expect(
       page.getByText(/Es fehlen derzeit fünf Pflichtunterlagen/),
     ).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Stand des Vorgangs abgefragt/)).toBeVisible();
+    await expect(page.getByText(/Nachgesehen, wie das Projekt steht/)).toBeVisible();
     expect(zustand.assistentAufrufe).toBeGreaterThan(0);
 
     // -- 5. Unterlagen hochladen ------------------------------------------
@@ -90,7 +92,7 @@ test.describe("Kritischer Pfad", () => {
     });
 
     // -- 6. Der Widerspruch ist da ----------------------------------------
-    await reiterOeffnen(page, /Widersprüche/);
+    await reiterOeffnen(page, /Passt nicht/);
     // An die Akte gebunden: auf dem Handy liegt der Assistent daneben und
     // enthält teils dieselben Wörter.
     const akte = page.getByRole("tabpanel");
@@ -105,33 +107,33 @@ test.describe("Kritischer Pfad", () => {
       .getByRole("button", { name: "Jennifer Hönig-Singh übernehmen" })
       .click();
     await expect(
-      akte.getByText("Es sind keine Widersprüche offen."),
+      akte.getByText("Alles passt zusammen."),
     ).toBeVisible({ timeout: 10_000 });
     expect(zustand.konfliktOffen).toBe(false);
 
     // -- 8. Freigabe bleibt gesperrt, weil Kritisches offen ist ------------
     await reiterOeffnen(page, /Prüfung/);
-    await expect(page.getByText(/Freigabe gesperrt/)).toBeVisible();
+    await expect(page.getByText(/Noch nicht fertig/)).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Paket einfrieren" }),
+      page.getByRole("button", { name: "Alles festschreiben" }),
     ).toBeDisabled();
 
     // Die Zweckentfremdung ist der Grund und wird benannt.
-    await expect(page.getByText(/überschreitet die Schwelle von 90 Tagen/)).toBeVisible();
+    await expect(page.getByText(/braucht Bonn dafür eine zusätzliche Erlaubnis/)).toBeVisible();
   });
 
   test("Projektdaten bestätigen", async ({ page }) => {
     await backendStellen(page);
     await page.goto(`/vorgang/${VORGANG_ID}`);
 
-    await reiterOeffnen(page, "Projektdaten");
+    await reiterOeffnen(page, "Angaben");
     await expect(page.getByText("Flurstück").first()).toBeVisible();
-    await expect(page.getByText("KI-Entwurf").first()).toBeVisible();
+    await expect(page.getByText("KI-Vorschlag").first()).toBeVisible();
 
     // Die Quelle steht neben jedem Wert; die Seite selbst prüft der eigene
     // Test unter "Quellvorschau".
     await expect(
-      page.getByRole("button", { name: /Quelle öffnen/ }).first(),
+      page.getByRole("button", { name: /Wo steht das\?/ }).first(),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Bestätigen" }).first().click();
@@ -150,10 +152,10 @@ test.describe("Kritischer Pfad", () => {
     await reiterOeffnen(page, "Antrag");
 
     // Was noch nicht kann, sagt auch warum.
-    await expect(page.getByText("Voraussetzung fehlt")).toBeVisible();
+    await expect(page.getByText("geht noch nicht")).toBeVisible();
     await expect(page.getByText(/Bestätigen Sie zuerst: Flurstück/)).toBeVisible();
 
-    await page.getByRole("button", { name: "Entwurf erzeugen" }).first().click();
+    await page.getByRole("button", { name: "Text schreiben" }).first().click();
     await expect(page.getByText(/Die Ferienwohnung im 1. Obergeschoss/)).toBeVisible({
       timeout: 15_000,
     });
@@ -167,8 +169,8 @@ test.describe("Kritischer Pfad", () => {
     await backendStellen(page);
     await page.goto(`/vorgang/${VORGANG_ID}`);
 
-    await reiterOeffnen(page, "Paket");
-    await expect(page.getByText("Portal-Übertragungsblatt")).toBeVisible();
+    await reiterOeffnen(page, "Fertig machen");
+    await expect(page.getByText(/Werte tippen Sie ins Amtsportal/)).toBeVisible();
     await expect(page.getByText("Am Weiher 7").first()).toBeVisible();
     await expect(
       page.getByText("Noch kein Wert. Im Faktenblatt ergänzen."),
@@ -176,7 +178,7 @@ test.describe("Kritischer Pfad", () => {
 
     // Das Produkt reicht nie selbst ein und sagt das auch.
     await expect(
-      page.getByText(/Die Einreichung erfolgt durch Sie im Bauportal\.NRW/),
+      page.getByText(/Abschicken müssen Sie selbst/),
     ).toBeVisible();
   });
 });
@@ -269,9 +271,9 @@ test.describe("Mobil", () => {
     test.skip(testInfo.project.name !== "mobil", "Nur im Mobil-Projekt sinnvoll.");
     await backendStellen(page);
     await page.goto(`/vorgang/${VORGANG_ID}`);
-    await page.getByRole("tab", { name: "Akte" }).click();
+    await page.getByRole("tab", { name: /^Zum Projekt/ }).click();
 
-    for (const name of ["Übersicht", "Unterlagen", "Projektdaten", "Widersprüche", "Anforderungen", "Prüfung", "Antrag", "Paket"]) {
+    for (const name of ["Überblick", "Angaben", "Passt nicht", "Checkliste", "Prüfung", "Antrag", "Fertig machen"]) {
       const reiter = page.getByRole("tab", { name: new RegExp(`^${name}`) });
       await expect(reiter).toBeVisible();
       const kasten = await reiter.boundingBox();
@@ -288,11 +290,11 @@ test.describe("Quellvorschau", () => {
   }) => {
     await backendStellen(page);
     await page.goto(`/vorgang/${VORGANG_ID}`);
-    await reiterOeffnen(page, "Projektdaten");
+    await reiterOeffnen(page, "Angaben");
 
     // Die Quelle steht als Name da, das Blatt kommt erst auf Wunsch —
     // eine PDF-Seite zu rendern ist nicht umsonst.
-    const oeffnen = page.getByRole("button", { name: /Quelle öffnen/ }).first();
+    const oeffnen = page.getByRole("button", { name: /Wo steht das\?/ }).first();
     await expect(oeffnen).toBeVisible();
     expect(await page.getByRole("tabpanel").locator("img").count()).toBe(0);
 
@@ -304,7 +306,7 @@ test.describe("Quellvorschau", () => {
     });
     const blatt = page.getByRole("tabpanel").locator("img").first();
     await expect(blatt).toBeVisible();
-    await expect(page.getByText(/Fundstelle markiert/).first()).toBeVisible();
+    await expect(page.getByText(/Stelle ist gelb markiert/).first()).toBeVisible();
 
     // Und lässt sich zum Lesen aufziehen — in der schmalen Spalte wäre eine
     // Bauzeichnung sonst nicht zu entziffern.
@@ -334,12 +336,12 @@ test.describe("Quellvorschau", () => {
       timeout: 20_000,
     });
 
-    await reiterOeffnen(page, /Widersprüche/);
+    await reiterOeffnen(page, /Passt nicht/);
     const akte = page.getByRole("tabpanel");
 
     // Zwei Quellen, jede einzeln aufklappbar — das macht die Entscheidung
     // überhaupt erst treffbar.
-    const quellen = akte.getByRole("button", { name: /Quelle öffnen/ });
+    const quellen = akte.getByRole("button", { name: /Wo steht das\?/ });
     await expect(quellen).toHaveCount(2);
     await expect(quellen.filter({ hasText: "bauschein.pdf" })).toHaveCount(1);
     await expect(

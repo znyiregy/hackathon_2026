@@ -139,6 +139,17 @@ def _vergleichsschluessel(schluessel: str, wert: str) -> str:
     return _basis_normalisierung(wert)
 
 
+def _status_wort(status: AnforderungStatus) -> str:
+    """Plain German for a requirement status, for people who are not officials."""
+
+    return {
+        AnforderungStatus.BELEGT: "liegt vor",
+        AnforderungStatus.TEILWEISE: "nur teilweise da",
+        AnforderungStatus.OFFEN: "fehlt noch",
+        AnforderungStatus.NICHT_PRUEFBAR: "können wir nicht prüfen",
+    }[status]
+
+
 def _schweregrad_fuer(schluessel: str) -> Schweregrad:
     if schluessel in KRITISCHE_SCHLUESSEL:
         return Schweregrad.KRITISCH
@@ -182,15 +193,15 @@ def finde_konflikte(aussagen: dict[str, list[KonfliktWert]]) -> list[Konflikt]:
 
 def _konflikt_hinweis(schluessel: str) -> str:
     if schluessel == "flurstueck":
-        return "Ein abweichendes Flurstück führt regelmäßig zu einer Nachforderung."
+        return "Wenn hier zwei verschiedene Nummern stehen, fragt das Amt fast immer nach."
     if schluessel == "eigentuemer":
         return (
-            "Abweichende Eigentümerangaben müssen über den aktuellen Grundbuchauszug "
-            "geklärt werden. Nicht durch Annahme auflösen."
+            "Hier stehen verschiedene Namen. Bitte über einen aktuellen "
+            "Grundbuchauszug klären — nicht raten."
         )
     if schluessel in {"strasse_hausnummer", "plz"}:
-        return "Eine abweichende Adresse betrifft die Zuordnung des gesamten Vorgangs."
-    return "Zwei unterschiedliche Angaben in den Unterlagen. Bitte kanonischen Wert wählen."
+        return "Zwei verschiedene Adressen. Das betrifft das ganze Projekt."
+    return "In Ihren Unterlagen stehen zwei verschiedene Angaben. Welche stimmt?"
 
 
 def _plausibilitaets_hinweise(aussagen: dict[str, list[KonfliktWert]]) -> list[Konflikt]:
@@ -228,8 +239,8 @@ def _plausibilitaets_hinweise(aussagen: dict[str, list[KonfliktWert]]) -> list[K
             schweregrad=Schweregrad.HINWEIS,
             werte=[wohn_quelle, nutz_quelle],
             hinweis=(
-                "Wohnfläche nach WoFlV liegt über der Nutzfläche nach DIN 277. "
-                "Unterschiedliche Bezugsgrößen — häufig kein Widerspruch, aber prüfenswert."
+                "Die Wohnfläche ist größer als die Nutzfläche. Beide werden nach "
+                "verschiedenen Regeln gerechnet — oft in Ordnung, aber schauen Sie kurz hin."
             ),
         )
     )
@@ -305,10 +316,10 @@ def einreichungspruefung(
         befunde.append(
             Befund(
                 schweregrad=konflikt.schweregrad,
-                beobachtung=f"{konflikt.bezeichnung}: widersprüchliche Angaben in den Unterlagen.",
-                grundlage="Dokumentübergreifender Vergleich geprüfter Fakten.",
+                beobachtung=f"{konflikt.bezeichnung}: In Ihren Unterlagen stehen verschiedene Angaben.",
+                grundlage="Wir haben alle Ihre Unterlagen miteinander verglichen.",
                 beleg=quellen,
-                massnahme="Kanonischen Wert wählen und die abweichende Unterlage korrigieren.",
+                massnahme="Entscheiden Sie, welche Angabe stimmt, und korrigieren Sie die andere.",
             )
         )
 
@@ -317,17 +328,17 @@ def einreichungspruefung(
             continue
         if anforderung.pflicht and anforderung.status is AnforderungStatus.OFFEN:
             schweregrad = Schweregrad.KRITISCH
-            massnahme = "Unterlage beschaffen oder bei der Eigentümerin anfordern."
+            massnahme = "Besorgen Sie die Unterlage oder fordern Sie sie beim Eigentümer an."
         elif anforderung.pflicht:
             schweregrad = Schweregrad.WARNUNG
-            massnahme = "Vorhandenen Beleg prüfen und vollständige Fassung nachreichen."
+            massnahme = "Sehen Sie sich an, was Sie haben, und reichen Sie den Rest nach."
         else:
             schweregrad = Schweregrad.HINWEIS
-            massnahme = "Empfohlener Beleg. Fehlt er, mit Begründung dokumentieren."
+            massnahme = "Nicht zwingend nötig. Wenn es fehlt, kurz begründen."
         befunde.append(
             Befund(
                 schweregrad=schweregrad,
-                beobachtung=f"{anforderung.bezeichnung}: Status {anforderung.status.value}.",
+                beobachtung=f"{anforderung.bezeichnung} — {_status_wort(anforderung.status)}.",
                 grundlage=anforderung.rechtsgrundlage,
                 beleg=anforderung.hinweis,
                 massnahme=massnahme,
@@ -352,10 +363,10 @@ def einreichungspruefung(
         befunde.append(
             Befund(
                 schweregrad=Schweregrad.KRITISCH,
-                beobachtung=f"{len(ungeprueft)} KI-Vorschläge sind noch nicht bestätigt.",
-                grundlage="Jede KI-Aussage muss von einer berechtigten Person bestätigt werden.",
+                beobachtung=f"{len(ungeprueft)} Vorschläge der KI haben Sie noch nicht bestätigt.",
+                grundlage="Nichts, was die KI vorschlägt, gilt ohne Ihre Bestätigung.",
                 beleg=f"{namen}{weitere}",
-                massnahme="Faktenblatt durchgehen und jede Angabe gegen die Quelle prüfen.",
+                massnahme="Gehen Sie die Angaben durch und vergleichen Sie sie mit der Quelle.",
             )
         )
 
@@ -368,10 +379,10 @@ def einreichungspruefung(
         befunde.append(
             Befund(
                 schweregrad=Schweregrad.WARNUNG,
-                beobachtung=f"{len(ohne_quelle)} Pflichtangaben haben noch keinen Wert.",
-                grundlage="Die Unterlagen enthalten dazu nichts.",
+                beobachtung=f"Zu {len(ohne_quelle)} nötigen Angaben fehlt uns noch alles.",
+                grundlage="In Ihren Unterlagen steht dazu nichts.",
                 beleg=f"{namen}{weitere}",
-                massnahme="Von Ihnen eintragen oder die passende Unterlage anfordern.",
+                massnahme="Bitte selbst eintragen oder die passende Unterlage besorgen.",
             )
         )
 
@@ -382,10 +393,10 @@ def einreichungspruefung(
         befunde.append(
             Befund(
                 schweregrad=Schweregrad.WARNUNG,
-                beobachtung=f"{len(unbrauchbar)} Unterlage(n) sind nicht auswertbar.",
-                grundlage="Dokumentqualitätsbewertung.",
+                beobachtung=f"{len(unbrauchbar)} Datei(en) konnten wir nicht lesen.",
+                grundlage="Beim Einlesen aufgefallen.",
                 beleg=", ".join(dokument.dateiname for dokument in unbrauchbar),
-                massnahme="Bessere Vorlage anfordern, bevor das Paket eingefroren wird.",
+                massnahme="Bitten Sie um eine bessere Datei, bevor Sie alles festschreiben.",
             )
         )
 
@@ -394,14 +405,14 @@ def einreichungspruefung(
             Befund(
                 schweregrad=Schweregrad.KRITISCH,
                 beobachtung=(
-                    f"Geplante Vermietung von {vermietungstage} Tagen überschreitet die Schwelle "
-                    "von 90 Tagen im Kalenderjahr."
+                    f"Sie wollen {vermietungstage} Tage im Jahr vermieten. Ab 91 Tagen "
+                    "braucht Bonn dafür eine zusätzliche Erlaubnis."
                 ),
-                grundlage="Zweckentfremdungssatzung der Bundesstadt Bonn.",
-                beleg="Deterministische Regel auf die geplanten Vermietungstage.",
+                grundlage="Regel der Stadt Bonn zur Vermietung von Wohnraum.",
+                beleg=f"Ihre Angabe: {vermietungstage} Tage im Jahr.",
                 massnahme=(
-                    "Zweckentfremdungsgenehmigung beim Amt für Soziales und Wohnen beantragen. "
-                    "Die Baugenehmigung allein erlaubt die Vermietung nicht."
+                    "Beantragen Sie diese Erlaubnis beim Amt für Soziales und Wohnen. "
+                    "Die Baugenehmigung allein reicht nicht."
                 ),
             )
         )
@@ -440,14 +451,14 @@ def naechster_schritt(
     ]
 
     if not dokumente:
-        return "Laden Sie die Projektunterlagen hoch oder erzeugen Sie einen Upload-Link für die Eigentümerin."
+        return "Laden Sie Ihre Unterlagen hoch — oder schicken Sie dem Eigentümer einen Link dafür."
     if offene_konflikte:
         namen = ", ".join(konflikt.bezeichnung for konflikt in offene_konflikte[:2])
-        return f"Lösen Sie die {len(offene_konflikte)} kritischen Widersprüche ({namen}), bevor Antragsinhalte entstehen."
+        return f"Klären Sie zuerst, was nicht zusammenpasst: {namen}."
     if zu_pruefen:
-        return f"Ordnen Sie {len(zu_pruefen)} Unterlage(n) ein, deren Typ noch unklar ist."
+        return f"Bei {len(zu_pruefen)} Datei(en) wissen wir nicht, was es ist. Bitte kurz sagen."
     if unbestaetigt:
-        return f"Bestätigen Sie die restlichen Projektdaten — {len(unbestaetigt)} Pflichtangaben sind offen."
+        return f"Gehen Sie die Angaben durch — {len(unbestaetigt)} warten noch auf Ihr Ja."
     if fehlende:
-        return f"Fordern Sie {len(fehlende)} fehlende Pflichtunterlage(n) an."
-    return "Führen Sie die Einreichungsprüfung durch und frieren Sie das Paket ein."
+        return f"Besorgen Sie {len(fehlende)} noch fehlende Unterlage(n)."
+    return "Lassen Sie alles noch einmal prüfen und schreiben Sie es dann fest."

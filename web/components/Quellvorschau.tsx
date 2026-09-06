@@ -47,7 +47,7 @@ export function Quellvorschau({
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Die Seite konnte nicht geladen werden.",
+          : "Das Blatt konnte ich nicht laden.",
       );
     } finally {
       setLaedt(false);
@@ -85,7 +85,7 @@ export function Quellvorschau({
           {offen ? "▾" : "▸"}
         </span>
         <span>
-          Quelle{offen ? " schließen" : " öffnen"}:{" "}
+          {offen ? "Zumachen" : "Wo steht das?"}:{" "}
           <span className={stil.datei}>{dateiname}</span>
           {seite ? `, S. ${seite}` : ""}
         </span>
@@ -95,7 +95,7 @@ export function Quellvorschau({
         <div className={stil.koerper} id={bereich}>
           {zitat && <blockquote className={stil.zitat}>{zitat}</blockquote>}
 
-          {laedt && <div className={stil.laedt}>Seite wird dargestellt…</div>}
+          {laedt && <div className={stil.laedt}>Blatt wird geholt…</div>}
 
           {fehler && (
             <div className="alarm alarm-kritisch" role="alert">
@@ -129,8 +129,8 @@ export function Quellvorschau({
                 </span>
                 <span>
                   {bild.markiert
-                    ? "Fundstelle markiert · zum Vergrößern klicken"
-                    : "Scan ohne Textebene — nicht markierbar · zum Vergrößern klicken"}
+                    ? "Stelle ist gelb markiert · zum Vergrößern klicken"
+                    : "Gescanntes Blatt — Stelle nicht markierbar · zum Vergrößern klicken"}
                 </span>
               </div>
             </>
@@ -147,7 +147,7 @@ export function Quellvorschau({
           <div className={stil.lupeKopf}>
             <span className={stil.lupeName}>
               {bild.dateiname} · Seite {bild.seite} von {bild.seiten_gesamt}
-              {bild.markiert ? " · Fundstelle markiert" : ""}
+              {bild.markiert ? " · Stelle gelb markiert" : ""}
             </span>
             <button
               type="button"

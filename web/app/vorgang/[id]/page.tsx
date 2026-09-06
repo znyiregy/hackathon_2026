@@ -28,7 +28,7 @@ export default function VorgangSeite() {
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Der Vorgang konnte nicht geladen werden.",
+          : "Das Projekt konnte ich nicht laden.",
       );
     }
   }, [id]);
@@ -55,7 +55,7 @@ export default function VorgangSeite() {
           </button>
         </div>
         <p style={{ marginTop: "1rem" }}>
-          <Link href="/">Zurück zur Vorgangsübersicht</Link>
+          <Link href="/">Zurück zu allen Projekten</Link>
         </p>
       </Rahmen>
     );
@@ -73,14 +73,15 @@ export default function VorgangSeite() {
     <Rahmen>
       <header className={stil.kopf}>
         <Link href="/" className={stil.zurueck}>
-          ← Vorgangsübersicht
+          ← Alle Projekte
         </Link>
         <div className="label">{vorgang.aktenzeichen}</div>
         <h1>{vorgang.adresse}</h1>
         <p className={stil.unterzeile}>
-          Nutzungsänderung {vorgang.bisherige_nutzung} →{" "}
-          {vorgang.geplante_nutzung} · geplante Vermietung{" "}
-          {vorgang.vermietungstage} Tage im Kalenderjahr
+          Aus {vorgang.bisherige_nutzung} soll {vorgang.geplante_nutzung} werden
+          {vorgang.vermietungstage > 0
+            ? ` · Vermietung an ${vorgang.vermietungstage} Tagen im Jahr`
+            : ""}
         </p>
       </header>
 
@@ -99,7 +100,7 @@ export default function VorgangSeite() {
           className={ansicht === "akte" ? stil.umschalterAktiv : ""}
           onClick={() => setAnsicht("akte")}
         >
-          Akte
+          Zum Projekt
           {vorgang.kennzahlen.konflikte_kritisch > 0 && (
             <span className={stil.punkt}>
               {vorgang.kennzahlen.konflikte_kritisch}

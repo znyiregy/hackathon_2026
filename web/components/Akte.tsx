@@ -27,14 +27,14 @@ type Reiter =
   | "paket";
 
 const REITER: { id: Reiter; label: string }[] = [
-  { id: "uebersicht", label: "Übersicht" },
+  { id: "uebersicht", label: "Überblick" },
   { id: "unterlagen", label: "Unterlagen" },
-  { id: "projektdaten", label: "Projektdaten" },
-  { id: "widersprueche", label: "Widersprüche" },
-  { id: "anforderungen", label: "Anforderungen" },
+  { id: "projektdaten", label: "Angaben" },
+  { id: "widersprueche", label: "Passt nicht" },
+  { id: "anforderungen", label: "Checkliste" },
   { id: "pruefung", label: "Prüfung" },
   { id: "antrag", label: "Antrag" },
-  { id: "paket", label: "Paket" },
+  { id: "paket", label: "Fertig machen" },
 ];
 
 export function Akte({
@@ -69,7 +69,7 @@ export function Akte({
 
   return (
     <section className={stil.akte}>
-      <div className={stil.reiter} role="tablist" aria-label="Bereiche der Akte" onKeyDown={tastatur}>
+      <div className={stil.reiter} role="tablist" aria-label="Bereiche" onKeyDown={tastatur}>
         {REITER.map((eintrag) => {
           const zaehler =
             eintrag.id === "widersprueche"
@@ -172,46 +172,46 @@ function Uebersicht({ vorgang }: { vorgang: VorgangDetail }) {
   return (
     <div className={stil.stapelWeit}>
       <div className={`balken balken-entwurf ${stil.feld}`}>
-        <span className="label">Nächster sinnvoller Schritt</span>
+        <span className="label">Als Nächstes</span>
         <p>{vorgang.naechster_schritt}</p>
         <span className={stil.quelle}>
-          Deterministisch aus dem Vorgangsstand berechnet, nicht generiert.
+          Ausgerechnet, nicht geraten.
         </span>
       </div>
 
       <div className={stil.kacheln}>
         <Kachel
-          titel="Unterlagen"
+          titel="Dateien"
           gross={`${z.dokumente}`}
           zeilen={[
-            `${z.dokumente_zu_pruefen} einzuordnen`,
-            `${z.dokumente_unbrauchbar} nicht auswertbar`,
+            `${z.dokumente_zu_pruefen} noch anzusehen`,
+            `${z.dokumente_unbrauchbar} nicht lesbar`,
           ]}
         />
         <Kachel
-          titel="Projektdaten"
+          titel="Angaben"
           gross={`${z.fakten_bestaetigt} / ${z.fakten_gesamt}`}
-          zeilen={["bestätigt"]}
+          zeilen={["von Ihnen bestätigt"]}
         />
         <Kachel
-          titel="Widersprüche"
+          titel="Passt nicht"
           gross={`${z.konflikte_kritisch}`}
           zeilen={[
-            `${z.konflikte_warnung} Warnungen`,
+            `${z.konflikte_warnung} zum Ansehen`,
             `${z.konflikte_hinweis} Hinweise`,
           ]}
           warnend={z.konflikte_kritisch > 0}
         />
         <Kachel
-          titel="Anforderungen"
+          titel="Checkliste"
           gross={`${z.anforderungen_belegt} / ${z.anforderungen_gesamt}`}
-          zeilen={[`${z.anforderungen_fehlend} Pflichtunterlagen fehlen`]}
+          zeilen={[`${z.anforderungen_fehlend} müssen Sie noch besorgen`]}
           warnend={z.anforderungen_fehlend > 0}
         />
       </div>
 
       <div>
-        <span className="label">Genehmigungskonstellation</span>
+        <span className="label">Welche Ämter mitreden</span>
         <div className={stil.straenge}>
           {vorgang.verfahren.map((strang) => (
             <div
@@ -297,7 +297,7 @@ function useDaten<T>(laden: () => Promise<T>, stand: number) {
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Konnte nicht geladen werden.",
+          : "Das konnte ich nicht laden.",
       );
     } finally {
       if (nummer === laufendeNummer.current) setLaedt(false);
@@ -339,16 +339,16 @@ function Fehlerband({
 
 /** German labels for values the backend keeps as machine-readable keys. */
 const STATUS_TEXT: Record<string, string> = {
-  belegt: "belegt",
-  teilweise: "teilweise belegt",
-  offen: "offen",
-  nicht_pruefbar: "nicht prüfbar",
-  kritisch: "kritisch",
-  warnung: "Warnung",
-  hinweis: "Hinweis",
+  belegt: "liegt vor",
+  teilweise: "teilweise da",
+  offen: "fehlt",
+  nicht_pruefbar: "kann ich nicht prüfen",
+  kritisch: "muss geklärt werden",
+  warnung: "bitte ansehen",
+  hinweis: "nur ein Hinweis",
   gut: "gut lesbar",
-  eingeschraenkt: "eingeschränkt lesbar",
-  unbrauchbar: "nicht auswertbar",
+  eingeschraenkt: "schlecht lesbar",
+  unbrauchbar: "nicht lesbar",
 };
 
 function statusText(wert: string): string {
@@ -378,10 +378,10 @@ function Unterlagen({
     return fehler ? (
       <Fehlerband text={fehler} onErneut={() => void neuLaden()} />
     ) : (
-      <Leer text="Wird geladen…" />
+      <Leer text="Einen Moment…" />
     );
   if (daten.dokumente.length === 0)
-    return <Leer text="Es sind noch keine Unterlagen aufgenommen." />;
+    return <Leer text="Noch keine Dateien da." />;
 
   // Unsichere Fälle stehen oben; nichts wird vergraben.
   const sortiert = [...daten.dokumente].sort(
@@ -427,19 +427,19 @@ function DokumentZeile({
       <div className={stil.dokumentKopf}>
         <strong>{dokument.dateiname}</strong>
         {dokument.typ_unklar && (
-          <span className="chip chip-entwurf">unklar · bitte einordnen</span>
+          <span className="chip chip-entwurf">Was ist das?</span>
         )}
         {dokument.qualitaet === "unbrauchbar" && (
-          <span className="chip chip-kritisch">nicht auswertbar</span>
+          <span className="chip chip-kritisch">nicht lesbar</span>
         )}
         {dokument.quelle === "extern" && (
-          <span className="chip chip-bestaetigt">extern</span>
+          <span className="chip chip-bestaetigt">von außen</span>
         )}
       </div>
 
       {dokument.namensvorschlag && (
         <div className={stil.vorschlag}>
-          <span className="label">Benennungsvorschlag</span>{" "}
+          <span className="label">Besserer Dateiname</span>{" "}
           {dokument.namensvorschlag}
         </div>
       )}
@@ -452,8 +452,8 @@ function DokumentZeile({
         <input
           value={typ}
           onChange={(e) => setTyp(e.target.value)}
-          placeholder="Dokumenttyp"
-          aria-label="Dokumenttyp"
+          placeholder="Was ist das?"
+          aria-label="Was ist das?"
         />
         <button
           className="knopf-sekundaer"
@@ -470,14 +470,14 @@ function DokumentZeile({
               setFehler(
                 ausnahme instanceof BackendFehler
                   ? ausnahme.message
-                  : "Der Typ konnte nicht übernommen werden.",
+                  : "Das konnte ich nicht übernehmen.",
               );
             } finally {
               setLaeuft(false);
             }
           }}
         >
-          {laeuft ? "Wird übernommen…" : "Typ übernehmen"}
+          {laeuft ? "Moment…" : "Übernehmen"}
         </button>
       </div>
       {fehler && <Fehlerband text={fehler} />}
@@ -504,7 +504,7 @@ function Projektdaten({
     return fehler ? (
       <Fehlerband text={fehler} onErneut={() => void neuLaden()} />
     ) : (
-      <Leer text="Wird geladen…" />
+      <Leer text="Einen Moment…" />
     );
 
   const gruppen = daten.kategorien
@@ -567,16 +567,16 @@ function FaktZeile({
       </div>
       <div className={stil.faktUnten}>
         {fakt.status === "ki_entwurf" && (
-          <span className="chip chip-entwurf">KI-Entwurf</span>
+          <span className="chip chip-entwurf">KI-Vorschlag</span>
         )}
         {fakt.status === "bestaetigt" && (
           <span className="chip chip-bestaetigt">bestätigt</span>
         )}
         {fakt.status === "konflikt" && (
-          <span className="chip chip-kritisch">Widerspruch</span>
+          <span className="chip chip-kritisch">passt nicht</span>
         )}
         {fakt.status === "offen" && !fakt.wert && (
-          <span className="chip chip-bestaetigt">von Ihnen einzutragen</span>
+          <span className="chip chip-bestaetigt">bitte selbst eintragen</span>
         )}
         {quelle && (
           <span className={stil.faktQuelle}>
@@ -598,7 +598,7 @@ function FaktZeile({
                 setFehler(
                   ausnahme instanceof BackendFehler
                     ? ausnahme.message
-                    : "Die Angabe konnte nicht bestätigt werden.",
+                    : "Das konnte ich nicht speichern.",
                 );
               } finally {
                 setLaeuft(false);
@@ -646,12 +646,12 @@ function Widersprueche({
     return fehler ? (
       <Fehlerband text={fehler} onErneut={() => void neuLaden()} />
     ) : (
-      <Leer text="Wird geladen…" />
+      <Leer text="Einen Moment…" />
     );
 
   const offen = daten.konflikte.filter((konflikt) => !konflikt.geklaert);
   if (offen.length === 0)
-    return <Leer text="Es sind keine Widersprüche offen." />;
+    return <Leer text="Alles passt zusammen." />;
 
   return (
     <div className={stil.stapel}>
@@ -691,7 +691,7 @@ function KonfliktKarte({
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Der Widerspruch konnte nicht geschlossen werden.",
+          : "Das konnte ich nicht speichern.",
       );
     } finally {
       setLaeuft(false);
@@ -722,7 +722,7 @@ function KonfliktKarte({
       <div className={stil.werte}>
         {konflikt.werte.map((wert, index) => (
           <div key={index} className={stil.wert}>
-            <span className="label">Wert {String.fromCharCode(65 + index)}</span>
+            <span className="label">Steht hier</span>
             <div className={stil.wertZahl}>{wert.wert}</div>
             <div className={stil.wertQuelle}>
               {wert.dateiname}
@@ -768,8 +768,8 @@ function KonfliktKarte({
         <input
           value={eigener}
           onChange={(e) => setEigener(e.target.value)}
-          placeholder="Eigener Wert"
-          aria-label="Eigener Wert"
+          placeholder="Eigene Angabe"
+          aria-label="Eigene Angabe"
         />
         <button
           className={`knopf-sekundaer ${stil.klein}`}
@@ -801,7 +801,7 @@ function Anforderungen({
     return fehler ? (
       <Fehlerband text={fehler} onErneut={() => void neuLaden()} />
     ) : (
-      <Leer text="Wird geladen…" />
+      <Leer text="Einen Moment…" />
     );
 
   const reihenfolge: Record<string, number> = {
@@ -884,7 +884,7 @@ function Pruefung({
     return fehler ? (
       <Fehlerband text={fehler} onErneut={() => void neuLaden()} />
     ) : (
-      <Leer text="Wird geladen…" />
+      <Leer text="Einen Moment…" />
     );
 
   return (
@@ -895,13 +895,13 @@ function Pruefung({
       >
         <strong>
           {daten.freigabe_moeglich
-            ? "Freigabe möglich."
-            : "Freigabe gesperrt — kritische Befunde offen."}
+            ? "Sie können weitermachen."
+            : "Noch nicht fertig — es muss erst etwas geklärt werden."}
         </strong>{" "}
-        {daten.befunde.length} Befund(e).
+        {daten.befunde.length} Hinweis(e).
         <div className={stil.pruefkopfKnoepfe}>
           <button className="knopf-sekundaer" onClick={() => void neuLaden()}>
-            Erneut prüfen
+            Nochmal prüfen
           </button>
           <button
             className="knopf-primaer"
@@ -918,19 +918,19 @@ function Pruefung({
                 setAktionsfehler(
                   ausnahme instanceof BackendFehler
                     ? ausnahme.message
-                    : "Das Paket konnte nicht eingefroren werden.",
+                    : "Das hat leider nicht geklappt.",
                 );
               } finally {
                 setFriert(false);
               }
             }}
           >
-            {friert ? "Wird eingefroren…" : "Paket einfrieren"}
+            {friert ? "Moment…" : "Alles festschreiben"}
           </button>
         </div>
         {paket && (
           <div className={stil.pruefsumme}>
-            Prüfsumme: {paket.slice(0, 32)}…
+            Kennzeichen: {paket.slice(0, 16)}…
           </div>
         )}
         {begruendung && (
@@ -967,19 +967,19 @@ function Pruefung({
           <dl>
             {befund.grundlage && (
               <>
-                <dt className="label">Grundlage</dt>
+                <dt className="label">Warum</dt>
                 <dd>{befund.grundlage}</dd>
               </>
             )}
             {befund.beleg && (
               <>
-                <dt className="label">Beleg</dt>
+                <dt className="label">Steht wo</dt>
                 <dd>{befund.beleg}</dd>
               </>
             )}
             {befund.massnahme && (
               <>
-                <dt className="label">Maßnahme</dt>
+                <dt className="label">Zu tun</dt>
                 <dd>{befund.massnahme}</dd>
               </>
             )}

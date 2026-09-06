@@ -86,8 +86,8 @@ function detail(zustand: Zustand) {
     angelegt_am: "2026-09-05T10:00:00Z",
     geaendert_am: "2026-09-05T10:00:00Z",
     naechster_schritt: zustand.konfliktOffen
-      ? "Lösen Sie die 1 kritischen Widersprüche (Eigentümer), bevor Antragsinhalte entstehen."
-      : "Bestätigen Sie die restlichen Projektdaten — 25 Pflichtangaben sind offen.",
+      ? "Klären Sie zuerst, was nicht zusammenpasst: Eigentümer."
+      : "Gehen Sie die Angaben durch — 25 warten noch auf Ihr Ja.",
     kennzahlen: kennzahlen(zustand),
     verfahren: [
       {
@@ -105,7 +105,7 @@ function detail(zustand: Zustand) {
         status: "kritisch",
         kritisch: true,
         erlaeuterung:
-          "Geplante Vermietung 120 Tage im Kalenderjahr überschreitet die Schwelle von 90 Tagen.",
+          "Sie wollen 120 Tage im Jahr vermieten. Ab 91 Tagen braucht Bonn dafür eine zusätzliche Erlaubnis.",
       },
     ],
     eingefroren_am: zustand.eingefroren ? "2026-09-05T12:00:00Z" : null,
@@ -196,20 +196,21 @@ function befunde(zustand: Zustand) {
       id: "b1",
       schweregrad: "kritisch",
       beobachtung:
-        "Geplante Vermietung von 120 Tagen überschreitet die Schwelle von 90 Tagen im Kalenderjahr.",
-      grundlage: "Zweckentfremdungssatzung der Bundesstadt Bonn.",
-      beleg: "Deterministische Regel auf die geplanten Vermietungstage.",
-      massnahme: "Zweckentfremdungsgenehmigung beantragen.",
+        "Sie wollen 120 Tage im Jahr vermieten. Ab 91 Tagen braucht Bonn dafür eine zusätzliche Erlaubnis.",
+      grundlage: "Regel der Stadt Bonn zur Vermietung von Wohnraum.",
+      beleg: "Ihre Angabe: 120 Tage im Jahr.",
+      massnahme:
+        "Beantragen Sie diese Erlaubnis beim Amt für Soziales und Wohnen.",
     },
   ];
   if (zustand.konfliktOffen) {
     liste.unshift({
       id: "b0",
       schweregrad: "kritisch",
-      beobachtung: "Eigentümer: widersprüchliche Angaben in den Unterlagen.",
-      grundlage: "Dokumentübergreifender Vergleich geprüfter Fakten.",
+      beobachtung: "Eigentümer: In Ihren Unterlagen stehen verschiedene Angaben.",
+      grundlage: "Wir haben alle Ihre Unterlagen miteinander verglichen.",
       beleg: "Jennifer Hönig-Singh · Gerold Brämer",
-      massnahme: "Kanonischen Wert wählen.",
+      massnahme: "Entscheiden Sie, welche Angabe stimmt.",
     });
   }
   return { befunde: liste, freigabe_moeglich: false };
@@ -308,7 +309,7 @@ export async function backendStellen(page: Page): Promise<Zustand> {
             status: "offen",
             rechtsgrundlage: "§ 1 BauPrüfVO NRW",
             beleg_dokument_ids: [],
-            hinweis: "Höchstens drei Monate alt.",
+            hinweis: "Darf höchstens drei Monate alt sein.",
           },
           {
             id: "a2",

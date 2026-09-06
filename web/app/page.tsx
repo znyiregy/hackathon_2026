@@ -22,7 +22,7 @@ export default function Vorgangsuebersicht() {
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Die Vorgänge konnten nicht geladen werden.",
+          : "Die Projekte konnten nicht geladen werden.",
       );
     }
   }, []);
@@ -38,16 +38,16 @@ export default function Vorgangsuebersicht() {
     <Rahmen>
       <header className={stil.kopf}>
         <div>
-          <h1>Vorgangsübersicht</h1>
+          <h1>Meine Projekte</h1>
           <p className={stil.unterzeile}>
-            Sortiert nach dem, was blockiert — nicht nach Datum.
+            Oben steht, wo es gerade klemmt.
           </p>
         </div>
         <button
           className="knopf-primaer"
           onClick={() => setFormularOffen((wert) => !wert)}
         >
-          {formularOffen ? "Abbrechen" : "Neuer Vorgang"}
+          {formularOffen ? "Abbrechen" : "Neues Projekt"}
         </button>
       </header>
 
@@ -81,16 +81,16 @@ export default function Vorgangsuebersicht() {
 
       {zeilen?.length === 0 && !formularOffen && (
         <div className={`karte ${stil.leer}`}>
-          <h2>Noch kein Vorgang</h2>
+          <h2>Noch kein Projekt</h2>
           <p style={{ color: "var(--tinte-weich)", margin: 0 }}>
-            Legen Sie einen Vorgang an. Der Assistent führt Sie danach durch die
-            Aufnahme der Unterlagen.
+            Legen Sie eins an. Der Assistent fragt Sie dann Schritt für Schritt
+            durch.
           </p>
           <button
             className="knopf-primaer"
             onClick={() => setFormularOffen(true)}
           >
-            Vorgang anlegen
+            Projekt anlegen
           </button>
         </div>
       )}
@@ -107,30 +107,30 @@ export default function Vorgangsuebersicht() {
                 <span className="label">{zeile.aktenzeichen}</span>
                 <h2>{zeile.adresse}</h2>
                 <p className={stil.unterzeile}>
-                  Nutzungsänderung {zeile.bisherige_nutzung} →{" "}
+                  Aus {zeile.bisherige_nutzung} wird{" "}
                   {zeile.geplante_nutzung}
                 </p>
               </div>
               <div className={stil.zaehler}>
                 <Zaehler
                   wert={zeile.dokumente_zu_pruefen}
-                  label="zu prüfen"
+                  label="noch anzusehen"
                   art="entwurf"
                 />
                 <Zaehler
                   wert={zeile.konflikte_kritisch}
-                  label="Widersprüche"
+                  label="passt nicht zusammen"
                   art="kritisch"
                 />
                 <Zaehler
                   wert={zeile.anforderungen_fehlend}
-                  label="fehlende Nachweise"
+                  label="fehlt noch"
                   art="kritisch"
                 />
               </div>
             </div>
             <div className={stil.schritt}>
-              <span className="label">Nächster Schritt</span>
+              <span className="label">Als Nächstes</span>
               <span>{zeile.naechster_schritt}</span>
             </div>
           </Link>
@@ -188,7 +188,7 @@ function NeuerVorgang({
   async function absenden(ereignis: React.FormEvent) {
     ereignis.preventDefault();
     if (!strasse.trim()) {
-      setFehler("Bitte geben Sie Straße und Hausnummer an.");
+      setFehler("Bitte geben Sie die Adresse an.");
       return;
     }
     setLaeuft(true);
@@ -207,7 +207,7 @@ function NeuerVorgang({
       setFehler(
         ausnahme instanceof BackendFehler
           ? ausnahme.message
-          : "Der Vorgang konnte nicht angelegt werden.",
+          : "Das Projekt konnte nicht angelegt werden.",
       );
       setLaeuft(false);
     }
@@ -215,15 +215,14 @@ function NeuerVorgang({
 
   return (
     <form className={`karte ${stil.formular}`} onSubmit={absenden}>
-      <h2>Vorgang anlegen</h2>
+      <h2>Neues Projekt</h2>
       <p className={stil.hinweis}>
-        Fünf Angaben genügen. Die letzte Frage steuert, ob eine
-        Zweckentfremdungsgenehmigung nötig wird.
+        Sechs kurze Angaben genügen.
       </p>
 
       <div className={stil.raster}>
         <label>
-          <span className="label">Straße und Hausnummer</span>
+          <span className="label">Adresse</span>
           <input
             value={strasse}
             onChange={(e) => setStrasse(e.target.value)}
@@ -240,15 +239,15 @@ function NeuerVorgang({
           <input value={ort} onChange={(e) => setOrt(e.target.value)} />
         </label>
         <label>
-          <span className="label">Bisherige Nutzung</span>
+          <span className="label">Wie wird es heute genutzt?</span>
           <input value={bisher} onChange={(e) => setBisher(e.target.value)} />
         </label>
         <label>
-          <span className="label">Geplante Nutzung</span>
+          <span className="label">Wie soll es genutzt werden?</span>
           <input value={geplant} onChange={(e) => setGeplant(e.target.value)} />
         </label>
         <label>
-          <span className="label">Vermietungstage je Kalenderjahr</span>
+          <span className="label">An wie vielen Tagen im Jahr vermietet?</span>
           <input
             type="number"
             min={0}
@@ -261,9 +260,9 @@ function NeuerVorgang({
 
       {tage > 90 && (
         <div className="alarm alarm-entwurf">
-          Über 90 Tage: Nach der Bonner Zweckentfremdungssatzung wird zusätzlich
-          eine Zweckentfremdungsgenehmigung beim Amt für Soziales und Wohnen
-          nötig. Das prüft keine Bauaufsicht für Sie.
+          <strong>Achtung, mehr als 90 Tage.</strong> Dann brauchen Sie
+          zusätzlich eine Erlaubnis von einem zweiten Amt. Das Bauamt sagt
+          Ihnen das nicht.
         </div>
       )}
 
@@ -271,7 +270,7 @@ function NeuerVorgang({
 
       <div className={stil.knoepfe}>
         <button className="knopf-primaer" type="submit" disabled={laeuft}>
-          {laeuft ? "Wird angelegt…" : "Vorgang anlegen"}
+          {laeuft ? "Einen Moment…" : "Projekt anlegen"}
         </button>
         <button
           className="knopf-sekundaer"

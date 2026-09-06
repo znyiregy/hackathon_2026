@@ -8,8 +8,8 @@ import { useState } from "react";
 import stil from "./Rahmen.module.css";
 
 const NAVIGATION = [
-  { href: "/", label: "Vorgänge" },
-  { href: "/regelwerk", label: "Regel- und Formularstand" },
+  { href: "/", label: "Meine Projekte" },
+  { href: "/regelwerk", label: "Welche Regeln gelten" },
 ];
 
 /** App shell: wordmark, navigation, and the person the work is attributed to.
@@ -42,7 +42,7 @@ export function Rahmen({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <div className="label" style={{ marginTop: "0.4rem" }}>
-            Bauantragsassistenz
+            Hilfe beim Bauantrag
           </div>
           <button
             className={`knopf-leise ${stil.menue}`}
@@ -77,7 +77,7 @@ export function Rahmen({ children }: { children: React.ReactNode }) {
           <div className={stil.personKreis}>AM</div>
           <div>
             <div className={stil.personName}>Dr. Anna Müller</div>
-            <div className="label">Architektin · bauvorlageberechtigt</div>
+            <div className="label">Architektin</div>
           </div>
         </div>
       </aside>

@@ -133,13 +133,16 @@ class TestAnforderungen:
 class TestEinreichungspruefung:
     def test_vermietung_ueber_90_tagen_ist_kritisch(self):
         befunde = einreichungspruefung([], [], [], [], vermietungstage=120)
-        zweckentfremdung = [b for b in befunde if "90 Tage" in b.beobachtung]
+        # Über den Amtsnamen erkannt, nicht über den Wortlaut — der Text darf
+        # sich ändern, der Befund muss bleiben.
+        zweckentfremdung = [b for b in befunde if "Soziales und Wohnen" in b.massnahme]
         assert len(zweckentfremdung) == 1
         assert zweckentfremdung[0].schweregrad is Schweregrad.KRITISCH
+        assert "120" in zweckentfremdung[0].beobachtung
 
     def test_vermietung_unter_90_tagen_erzeugt_keinen_befund(self):
         befunde = einreichungspruefung([], [], [], [], vermietungstage=60)
-        assert not [b for b in befunde if "90 Tage" in b.beobachtung]
+        assert not [b for b in befunde if "Soziales und Wohnen" in b.massnahme]
 
     def test_ungeprueftes_ki_ergebnis_sperrt_die_freigabe(self):
         """Ein Vorschlag, den niemand geprüft hat, ist ein echter Blocker."""
@@ -166,7 +169,7 @@ class TestEinreichungspruefung:
         )
         befunde = einreichungspruefung([fakt], [], [], [], vermietungstage=0)
         assert freigabe_moeglich(befunde)
-        assert any("keinen Wert" in b.beobachtung for b in befunde)
+        assert any(b.schweregrad is Schweregrad.WARNUNG for b in befunde)
 
     def test_befunde_sind_nach_schweregrad_sortiert(self):
         befunde = einreichungspruefung([], [], bewerte_anforderungen([]), [], vermietungstage=120)
@@ -188,7 +191,8 @@ class TestNaechsterSchritt:
             {"flurstueck": [_wert("143/2"), _wert("143", "b.pdf")]}
         )
         text = naechster_schritt([dokument], [], konflikte, [])
-        assert "Widersprüche" in text
+        # Der kritische Widerspruch wird beim Namen genannt, alles andere wartet.
+        assert "Flurstück" in text
 
 
 class TestHerkunftWerte:

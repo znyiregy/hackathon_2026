@@ -17,28 +17,26 @@ interface Eintrag {
 }
 
 const WERKZEUG_TEXT: Record<string, string> = {
-  vorgangsstand: "Stand des Vorgangs abgefragt",
-  widersprueche: "Widersprüche geprüft",
-  offene_projektdaten: "Offene Projektdaten geprüft",
-  fehlende_unterlagen: "Anforderungsliste geprüft",
-  dokumentenliste: "Unterlagen gesichtet",
-  fakt_bestaetigen: "Projektangabe bestätigt",
-  widerspruch_loesen: "Widerspruch geschlossen",
-  upload_link_erzeugen: "Upload-Link erzeugt",
-  einreichungspruefung_ausfuehren: "Einreichungsprüfung ausgeführt",
+  vorgangsstand: "Nachgesehen, wie das Projekt steht",
+  widersprueche: "Nachgesehen, was nicht zusammenpasst",
+  offene_projektdaten: "Nachgesehen, welche Angaben fehlen",
+  fehlende_unterlagen: "Nachgesehen, welche Unterlagen fehlen",
+  dokumentenliste: "Die Unterlagen durchgesehen",
+  fakt_bestaetigen: "Angabe bestätigt",
+  widerspruch_loesen: "Unstimmigkeit geklärt",
+  upload_link_erzeugen: "Link zum Hochladen erstellt",
+  einreichungspruefung_ausfuehren: "Alles noch einmal durchgeprüft",
 };
 
 const ERSTE_FRAGE =
-  "Guten Tag. Ich bereite mit Ihnen die Nutzungsänderung vor. " +
-  "Ziehen Sie die Projektunterlagen hier hinein — ich lese jede Datei, " +
-  "ordne sie ein und sage Ihnen, was danach noch fehlt. " +
-  "Oder fragen Sie mich, wie der Vorgang gerade steht.";
+  "Guten Tag. Ziehen Sie Ihre Unterlagen einfach hier hinein. " +
+  "Ich lese jede Datei und sage Ihnen danach, was noch fehlt.";
 
 const VORSCHLAEGE = [
-  "Wie steht der Vorgang gerade?",
-  "Welche Unterlagen fehlen noch?",
-  "Zeig mir die Widersprüche.",
-  "Führe die Einreichungsprüfung aus.",
+  "Wie steht es gerade?",
+  "Was fehlt noch?",
+  "Wo passt etwas nicht zusammen?",
+  "Prüf bitte alles durch.",
 ];
 
 export function Assistent({
@@ -112,7 +110,7 @@ export function Assistent({
     const liste = Array.from(dateien);
     setLaeuft(true);
     try {
-      setPhase(`Liest ${liste.length} Unterlage(n)`);
+      setPhase(`Liest ${liste.length} Datei(en)`);
       const gelesen = await Promise.all(liste.map(dateiLesen));
       const ergebnis = await api.hochladen(vorgangId, gelesen);
       onAenderung();
@@ -121,7 +119,7 @@ export function Assistent({
       // einen Upload, der gerade fehlgeschlagen ist.
       anhaengen({
         rolle: "architektin",
-        inhalt: `${liste.length} Unterlage(n) hochgeladen: ${liste
+        inhalt: `${liste.length} Datei(en) hochgeladen: ${liste
           .map((datei) => datei.name)
           .join(", ")}`,
       });
@@ -129,7 +127,7 @@ export function Assistent({
       for (const abgelehnt of ergebnis.abgelehnt ?? []) {
         anhaengen({
           rolle: "system",
-          inhalt: `${abgelehnt.name} wurde nicht aufgenommen: ${abgelehnt.grund}`,
+          inhalt: `${abgelehnt.name} konnte ich nicht lesen: ${abgelehnt.grund}`,
         });
       }
 
@@ -137,7 +135,7 @@ export function Assistent({
       for (const dokument of ergebnis.dokumente) {
         if (!hochgeladen.has(dokument.dateiname)) continue;
         const typ = dokument.typ_unklar
-          ? "Typ unklar — bitte einordnen"
+          ? "Was ist das? Bitte kurz sagen"
           : (dokument.typ ?? "unbekannt");
         anhaengen({
           rolle: "werkzeug",
@@ -147,8 +145,8 @@ export function Assistent({
 
       setPhase("Wertet aus");
       await senden(
-        "Ich habe gerade Unterlagen hochgeladen. Was hat sich dadurch geändert, " +
-          "und was ist jetzt der nächste Schritt?",
+        "Ich habe gerade Unterlagen hochgeladen. Was hat sich geändert, und " +
+          "was soll ich als Nächstes tun?",
       );
     } catch (ausnahme) {
       anhaengen({
@@ -156,7 +154,7 @@ export function Assistent({
         inhalt:
           ausnahme instanceof BackendFehler
             ? ausnahme.message
-            : "Die Unterlagen konnten nicht aufgenommen werden.",
+            : "Die Dateien konnten nicht gelesen werden.",
       });
       setLaeuft(false);
       setPhase("");
@@ -187,8 +185,7 @@ export function Assistent({
       <header className={stil.kopf}>
         <span className="label">Assistent</span>
         <span className={stil.hinweis}>
-          Jede Angabe wird von Ihnen bestätigt · nichts geht automatisch an eine
-          Behörde
+          Sie bestätigen jede Angabe · nichts geht von allein ans Amt
         </span>
       </header>
 
@@ -235,8 +232,8 @@ export function Assistent({
           className={`knopf-sekundaer ${stil.anhang}`}
           onClick={() => dateiRef.current?.click()}
           disabled={laeuft}
-          aria-label="Unterlagen hochladen"
-          title="Unterlagen hochladen"
+          aria-label="Dateien hochladen"
+          title="Dateien hochladen"
         >
           ＋
         </button>

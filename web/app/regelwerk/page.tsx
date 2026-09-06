@@ -66,26 +66,24 @@ const QUELLEN = [
 export default function Regelwerk() {
   return (
     <Rahmen>
-      <h1>Regel- und Formularstand</h1>
+      <h1>Welche Regeln gelten</h1>
       <p className={stil.unterzeile}>
-        Jede angewandte Regel mit Fundstelle, Gültigkeitsstand und letzter
-        Prüfung. Was nicht verifizierbar ist, steht hier als nicht verifiziert.
+        Woher die Anforderungen kommen und wann wir sie zuletzt geprüft haben.
       </p>
 
       <div className="alarm alarm-entwurf" style={{ margin: "1.2rem 0" }}>
-        <strong>Kein Rechtsrat.</strong> Diese Angaben sind Input für die
-        Antragsvorbereitung. Jede regulatorische Aussage muss von einer
-        bauvorlageberechtigten Person geprüft werden.
+        <strong>Das ist keine Rechtsberatung.</strong> Bitte lassen Sie alles
+        von einer Fachperson prüfen, bevor Sie sich darauf verlassen.
       </div>
 
       <div className={stil.tabelleHuelle}>
         <table className={stil.tabelle}>
           <thead>
             <tr>
-              <th>Gegenstand</th>
-              <th>Fundstelle</th>
-              <th>Stand</th>
-              <th>Zuletzt geprüft</th>
+              <th>Worum es geht</th>
+              <th>Steht wo</th>
+              <th>Gilt seit</th>
+              <th>Von uns geprüft</th>
             </tr>
           </thead>
           <tbody>
